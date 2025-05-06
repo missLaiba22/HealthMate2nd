@@ -1,0 +1,49 @@
+name: frontend
+description: "HealthMate Flutter Frontend"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI and Design
+  cupertino_icons: ^1.0.8
+  flutter_svg: ^2.0.10+1           # For SVG images like avatars
+  google_fonts: ^6.1.0             # To use custom Google fonts
+  lottie: ^3.1.0                   # For animated illustrations
+
+  # State Management
+  provider: ^6.1.2                 # For state management
+
+  # HTTP & WebSocket Communication
+  http: ^1.2.1
+  web_socket_channel: ^2.4.0       # WebSocket support for chat/audio
+
+  # Audio
+  just_audio: ^0.9.36              # To play back audio (TTS responses)
+  flutter_sound: ^9.2.13+1         # To record audio (for STT)
+
+  # Permission Handling
+  permission_handler: ^11.3.1      # To request microphone/audio permissions
+  logging: ^1.2.0 
+  # Others
+  path_provider: ^2.1.2            # For storing temporary files
+  path: ^1.9.0                     # Path manipulation
+  uuid: ^4.2.2                     # For generating unique IDs
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/avatars/
+    - assets/sounds/
+    - assets/lottie/

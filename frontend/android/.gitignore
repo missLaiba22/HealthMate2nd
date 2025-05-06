@@ -1,0 +1,33 @@
+# Dart/Pub related
+.pub/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+
+# Android build output
+build/
+.gradle/
+captures/
+
+# Gradle wrapper
+gradle-wrapper.jar
+gradlew
+gradlew.bat
+local.properties
+
+# IntelliJ
+.idea/
+
+# VS Code
+.vscode/
+
+# Flutter generated files
+GeneratedPluginRegistrant.java
+.cxx/
+
+# Keystore files (for signing your Android app)
+# Remember to never publicly share your keystore
+key.properties
+**/*.keystore
+**/*.jks

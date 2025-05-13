@@ -47,3 +47,5 @@ flutter:
     - assets/avatars/
     - assets/sounds/
     - assets/lottie/
+    - assets/images/
+    - assets/icons/

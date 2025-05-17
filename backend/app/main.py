@@ -1,61 +1,30 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import logging
-import uvicorn
-from app.api.ws_chat import router as ws_router
+from app.routes import auth_routes
+from app.routes import register_routes 
+app = FastAPI()
+origins = [
+    "http://localhost:5173",  # Your Flutter web dev server origin, adjust port if needed
+    "http://localhost:8000",  # If your frontend and backend run on same origin, optional
+    "http://localhost",       # You can also allow all localhost variants
+    "http://127.0.0.1",
+]
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler("healthmate_api.log")
-    ]
-)
-
-logger = logging.getLogger("healthmate")
-
-# Create FastAPI app
-app = FastAPI(
-    title="HealthMate API",
-    description="Backend API for HealthMate Voice Chat application",
-    version="0.1.0"
-)
-
-# Add CORS middleware
+# CORS for Flutter frontend (adjust origin if hosted differently)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact domain
+    allow_origins=["*"],  # For development only. Use exact domain in production.
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Include routes
+app.include_router(auth_routes.router, prefix="/auth")
+app.include_router(register_routes.router, prefix="/register")
 
-# Include WebSocket router
-app.include_router(ws_router)
 
-@app.get("/")
-async def root():
-    """Health check endpoint"""
-    return {"status": "online", "service": "HealthMate Voice Chat API"}
+# app.include_router(user_routes.router, prefix="/users")
+# app.include_router(scan_routes.router, prefix="/scans")
+# app.include_router(appointment_routes.router, prefix="/appointments")
+# app.include_router(report_routes.router, prefix="/reports")
 
-@app.on_event("startup")
-async def startup_event():
-    """Runs when the application starts"""
-    logger.info("HealthMate API is starting up")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Runs when the application shuts down"""
-    logger.info("HealthMate API is shutting down")
-
-# Run the API with uvicorn when this file is executed directly
-if __name__ == "__main__":
-    uvicorn.run(
-        "main:app", 
-        host="0.0.0.0", 
-        port=8000, 
-        log_level="info",
-        reload=True
-    )

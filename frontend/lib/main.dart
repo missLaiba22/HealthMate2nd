@@ -2,8 +2,9 @@
 
 import 'package:flutter/material.dart';
 import '../../../../constants.dart';
-import 'package:frontend/Screens/Welcome/welcome_screen.dart';
-import 'voice_chat_page.dart'; // Your current VoiceChatPage
+import 'package:frontend/Screens/Welcome/welcome_screen.dart'; // Your existing welcome screen
+import 'package:frontend/Screens/Login/login_screen.dart'; // Make sure this exists
+import 'package:frontend/Screens/Signup/signup_screen.dart'; // Make sure this exists
 
 void main() {
   runApp(const HealthMateApp());
@@ -46,10 +47,11 @@ class HealthMateApp extends StatelessWidget {
         ),
       ),
       home:
-          const WelcomeScreen(), // 👈 Start from welcome, later redirect after login
+          const WelcomeScreen(), // Your starting screen (can navigate to login/signup)
       routes: {
-        '/voice':
-            (context) => const VoiceChatPage(), // For navigating after login
+        '/login': (context) => const LoginScreen(),
+        '/signup': (context) => const SignUpScreen(),
+        // You can add more routes as needed
       },
     );
   }

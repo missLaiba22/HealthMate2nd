@@ -1,0 +1,72 @@
+# ====================
+# Python / FastAPI
+# ====================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.log
+*.sqlite3
+.env
+.venv/
+venv/
+pip-wheel-metadata/
+*.swp
+
+# Byte-compiled / optimized / DLL files
+*.pyc
+*.pyo
+
+# Coverage reports
+htmlcov/
+.coverage
+
+# Migrations (if you use Alembic or similar)
+migrate_working_dir/
+
+# VS Code settings (optional)
+.vscode/
+
+# ====================
+# Flutter / Dart
+# ====================
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio build artifacts
+/android/app/debug/
+/android/app/profile/
+/android/app/release/
+
+# IntelliJ IDEA related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Miscellaneous
+*.class
+*.DS_Store
+*.swp
+.atom/
+.build/
+.buildlog/
+.history/
+.svn/
+.swiftpm/

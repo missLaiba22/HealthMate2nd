@@ -24,8 +24,8 @@ dependencies:
   web_socket_channel: ^2.4.0       # WebSocket support for chat/audio
 
   # Audio
-  just_audio: ^0.9.36              # To play back audio (TTS responses)
-  flutter_sound: ^9.2.13+1         # To record audio (for STT)
+  # just_audio: ^0.9.36              # To play back audio (TTS responses)
+  # flutter_sound: ^9.2.13+1         # To record audio (for STT)
 
   # Permission Handling
   permission_handler: ^11.3.1      # To request microphone/audio permissions

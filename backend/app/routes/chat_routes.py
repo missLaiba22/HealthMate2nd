@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
-from utils.jwt import get_current_user  # adjust if named differently
-from controllers.chat_controller import chat_controller
+from app.utils.jwt import get_current_user
+from app.controllers.chat_controller import chat_controller
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 
@@ -10,5 +10,7 @@ class ChatRequest(BaseModel):
 
 @router.post("/")
 async def chat(request: ChatRequest, current_user=Depends(get_current_user)):
-    response = await chat_controller(request.message)
+    # Extract user_id from the JWT token
+    user_id = current_user["user_id"]
+    response = await chat_controller(request.message, user_id)
     return {"response": response}

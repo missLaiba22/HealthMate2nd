@@ -14,7 +14,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_svg: ^2.0.10+1           # For SVG images like avatars
   google_fonts: ^6.1.0             # To use custom Google fonts
-  lottie: ^3.1.0                   # For animated illustrations
 
   # State Management
   provider: ^6.1.2                 # For state management
@@ -23,9 +22,12 @@ dependencies:
   http: ^1.2.1
   web_socket_channel: ^2.4.0       # WebSocket support for chat/audio
 
-  # Audio
-  # just_audio: ^0.9.36              # To play back audio (TTS responses)
-  # flutter_sound: ^9.2.13+1         # To record audio (for STT)
+  # Storage
+  shared_preferences: ^2.2.2
+
+  # Voice Features
+  speech_to_text: ^6.6.0
+  flutter_tts: ^3.8.5
 
   # Permission Handling
   permission_handler: ^11.3.1      # To request microphone/audio permissions
@@ -44,8 +46,5 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/avatars/
-    - assets/sounds/
-    - assets/lottie/
     - assets/images/
     - assets/icons/

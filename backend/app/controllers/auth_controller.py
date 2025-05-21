@@ -25,12 +25,13 @@ def login_user(user):
     role = db_user.get("role", "user")  # default to 'user' if not set
     
     token = create_access_token(
-        data={
-            "sub": db_user["email"],
-            "role": role
-        },
-        expires_delta=timedelta(minutes=60)
-    )
+    data={
+        "sub": db_user["email"],  # This is the standard
+        "email": db_user["email"],  # Add this line!
+        "role": role
+    },
+    expires_delta=timedelta(minutes=60)
+)
 
     return {
         "access_token": token,

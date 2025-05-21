@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import auth_routes, chat_routes
+from app.routes import auth_routes, chat_routes, profile_routes
 from app.routes import register_routes 
 app = FastAPI()
 origins = [
@@ -22,6 +22,7 @@ app.add_middleware(
 app.include_router(auth_routes.router, prefix="/auth")
 app.include_router(register_routes.router, prefix="/register")
 app.include_router(chat_routes.router)  # Chat routes already have prefix="/chat"
+app.include_router(profile_routes.router)
 
 
 # app.include_router(user_routes.router, prefix="/users")

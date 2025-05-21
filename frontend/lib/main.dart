@@ -1,10 +1,12 @@
 // ignore_for_file: depend_on_referenced_packages
 
 import 'package:flutter/material.dart';
-import '../../../../constants.dart';
+import 'package:frontend/constants.dart';
 import 'package:frontend/Screens/Welcome/welcome_screen.dart'; // Your existing welcome screen
 import 'package:frontend/Screens/Login/login_screen.dart'; // Make sure this exists
 import 'package:frontend/Screens/Signup/signup_screen.dart'; // Make sure this exists
+import 'package:frontend/Screens/Scan_Analysis/scan_analysis_screen.dart'; // Make sure this exists
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const HealthMateApp());
@@ -51,6 +53,25 @@ class HealthMateApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
+        '/scan': (context) => FutureBuilder<String?>(
+          future: SharedPreferences.getInstance().then((prefs) => prefs.getString('token')),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            
+            final token = snapshot.data;
+            if (token == null) {
+              return const LoginScreen();
+            }
+            
+            return ScanAnalysisScreen(token: token);
+          },
+        ),
         // You can add more routes as needed
       },
     );

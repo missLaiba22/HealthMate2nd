@@ -11,6 +11,7 @@ import '../../Signup/signup_screen.dart';
 import '../../Conversational_Engine/conversational_screen.dart';
 import '../../role_selection/doctor_form.dart';
 import '../../role_selection/patient_form.dart';
+import '../../Home/home_screen.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -58,11 +59,11 @@ class _LoginFormState extends State<LoginForm> {
             const SnackBar(content: Text("Login successful!")),
           );
 
-          // Navigate to conversational screen
+          // Navigate to home screen
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => ConversationalScreen(token: token),
+              builder: (context) => HomeScreen(token: token),
             ),
           );
         }

@@ -4,18 +4,25 @@ from dotenv import load_dotenv
 from .prompt_service import MedicalPromptEngine
 from ..models.chat import ConversationHistory
 from datetime import datetime
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 prompt_engine = MedicalPromptEngine()
 
-def get_conversation_history(user_id: str) -> ConversationHistory:
+def get_conversation_history(email: str) -> ConversationHistory:
     """Get conversation history for a user."""
-    return ConversationHistory(user_id)
+    logger.info(f"Getting conversation history for email: {email}")
+    return ConversationHistory(email)
 
-async def get_ai_response(message: str, user_id: str) -> str:
+async def get_ai_response(message: str, email: str) -> str:
     # Get conversation history
-    history = get_conversation_history(user_id)
+    logger.info(f"Getting AI response for email: {email}")
+    history = get_conversation_history(email)
     
     # Create appropriate prompt based on message content
     prompt = prompt_engine.create_response_prompt(message)

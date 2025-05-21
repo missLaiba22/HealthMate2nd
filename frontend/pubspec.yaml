@@ -32,6 +32,10 @@ dependencies:
   # Permission Handling
   permission_handler: ^11.3.1      # To request microphone/audio permissions
   logging: ^1.2.0 
+
+  # Image Handling
+  image_picker: ^1.0.7             # For picking images from gallery/camera
+
   # Others
   path_provider: ^2.1.2            # For storing temporary files
   path: ^1.9.0                     # Path manipulation

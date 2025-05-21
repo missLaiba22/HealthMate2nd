@@ -15,6 +15,9 @@ class _DoctorFormState extends State<DoctorForm> {
   final passwordController = TextEditingController();
   final specializationController = TextEditingController();
   final experienceController = TextEditingController();
+  final dateOfBirthController = TextEditingController();
+  final genderController = TextEditingController();
+  final contactController = TextEditingController();
 
   Future<void> registerDoctor() async {
     final url = Uri.parse("http://127.0.0.1:8000/register/doctor");
@@ -28,6 +31,9 @@ class _DoctorFormState extends State<DoctorForm> {
         "password": passwordController.text,
         "specialization": specializationController.text,
         "experience_years": int.parse(experienceController.text),
+        "date_of_birth": dateOfBirthController.text,
+        "gender": genderController.text,
+        "contact_number": contactController.text,
       }),
     );
 
@@ -73,6 +79,20 @@ class _DoctorFormState extends State<DoctorForm> {
               decoration: const InputDecoration(
                 labelText: "Years of Experience",
               ),
+            ),
+            TextField(
+              controller: dateOfBirthController,
+              decoration: const InputDecoration(labelText: "Date of Birth"),
+              keyboardType: TextInputType.datetime,
+            ),
+            TextField(
+              controller: genderController,
+              decoration: const InputDecoration(labelText: "Gender"),
+            ),
+            TextField(
+              controller: contactController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(labelText: "Contact Number"),
             ),
             const SizedBox(height: 20),
             ElevatedButton(

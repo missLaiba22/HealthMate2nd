@@ -1,13 +1,13 @@
 from fastapi import HTTPException
 from app.services.chat_service import get_ai_response
 
-async def chat_controller(message: str, user_id: str) -> str:
+async def chat_controller(message: str, email: str) -> str:
     # Input validation
     if not message:
         raise HTTPException(status_code=400, detail="Message cannot be empty")
     
-    if not user_id:
-        raise HTTPException(status_code=400, detail="User ID is required")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
     
     # Check for emergency keywords
     emergency_keywords = ['emergency', 'urgent', 'severe pain', 'heart attack', 'stroke', 
@@ -18,7 +18,7 @@ async def chat_controller(message: str, user_id: str) -> str:
                            "local emergency services (911 in the US) or go to the nearest "
                            "emergency room. Do not wait for an AI response.")
         try:
-            ai_response = await get_ai_response(message, user_id)
+            ai_response = await get_ai_response(message, email)
             return f"{emergency_message}\n\n{ai_response}"
         except Exception as e:
             raise HTTPException(
@@ -28,7 +28,7 @@ async def chat_controller(message: str, user_id: str) -> str:
             )
     
     try:
-        return await get_ai_response(message, user_id)
+        return await get_ai_response(message, email)
     except Exception as e:
         raise HTTPException(
             status_code=500,

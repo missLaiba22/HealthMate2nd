@@ -31,9 +31,8 @@ def verify_token(token: str):
 
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
-    payload = verify_token(token)
-    user_id = payload.get("sub")
-    role = payload.get("role")
-    if user_id is None or role is None:
-        raise HTTPException(status_code=401, detail="Invalid token: missing subject or role")
-    return {"user_id": user_id, "role": role}
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")

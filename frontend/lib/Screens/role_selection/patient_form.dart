@@ -15,6 +15,9 @@ class _PatientFormState extends State<PatientForm> {
   final passwordController = TextEditingController();
   final ageController = TextEditingController();
   final genderController = TextEditingController();
+  final dateOfBirthController = TextEditingController();
+  final contactController = TextEditingController();
+  final emergencyContactController = TextEditingController();
 
   Future<void> registerPatient() async {
     final url = Uri.parse("http://127.0.0.1:8000/register/patient");
@@ -28,6 +31,9 @@ class _PatientFormState extends State<PatientForm> {
         "password": passwordController.text,
         "age": int.parse(ageController.text),
         "gender": genderController.text,
+        "date_of_birth": dateOfBirthController.text,
+        "contact_number": contactController.text,
+        "emergency_contact": emergencyContactController.text,
       }),
     );
 
@@ -71,6 +77,21 @@ class _PatientFormState extends State<PatientForm> {
             TextField(
               controller: genderController,
               decoration: const InputDecoration(labelText: "Gender"),
+            ),
+            TextField(
+              controller: dateOfBirthController,
+              keyboardType: TextInputType.datetime,
+              decoration: const InputDecoration(labelText: "Date of Birth"),
+            ),
+            TextField(
+              controller: contactController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(labelText: "Contact Number"),
+            ),
+            TextField(
+              controller: emergencyContactController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(labelText: "Emergency Contact"),
             ),
             const SizedBox(height: 20),
             ElevatedButton(

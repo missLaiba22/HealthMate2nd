@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../responsive.dart'; // Adjusted to the correct relative path if it exists in your project
 
 import '../../components/background.dart';
+import '../../constants.dart';
 import 'components/login_form.dart';
 import 'components/login_screen_top_image.dart';
 
@@ -14,18 +15,50 @@ class LoginScreen extends StatelessWidget {
     return const Background(
       child: SingleChildScrollView(
         child: Responsive(
-          mobile: MobileLoginScreen(),
           desktop: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Expanded(child: LoginScreenTopImage()),
               Expanded(
-                child: Row(
+                child: LoginScreenTopImage(),
+              ),
+              Expanded(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [SizedBox(width: 450, child: LoginForm())],
+                  children: [
+                    Text(
+                      "Welcome Back",
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: kPrimaryColor,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      "Sign in to continue your health journey",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Spacer(),
+                        Expanded(
+                          flex: 8,
+                          child: LoginForm(),
+                        ),
+                        Spacer(),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
+          mobile: MobileLoginScreen(),
         ),
       ),
     );
@@ -41,8 +74,27 @@ class MobileLoginScreen extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         LoginScreenTopImage(),
-        Row(
-          children: [Spacer(), Expanded(flex: 8, child: LoginForm()), Spacer()],
+        SizedBox(height: 24),
+        Text(
+          "Welcome Back",
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: kPrimaryColor,
+          ),
+        ),
+        SizedBox(height: 12),
+        Text(
+          "Sign in to continue your health journey",
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.black54,
+          ),
+        ),
+        SizedBox(height: 24),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.0),
+          child: LoginForm(),
         ),
       ],
     );

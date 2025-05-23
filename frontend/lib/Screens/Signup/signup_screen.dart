@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../../constants.dart';
-import '../../../../responsive.dart';
 import '../../components/background.dart';
-import 'components/sign_up_top_image.dart';
-import 'components/signup_form.dart';
+import '../../constants.dart';
+import '../../responsive.dart';
+import 'components/sign_up_form.dart';
+import 'components/signup_screen_top_image.dart';
 
 class SignUpScreen extends StatelessWidget {
   const SignUpScreen({super.key});
@@ -13,22 +13,50 @@ class SignUpScreen extends StatelessWidget {
     return const Background(
       child: SingleChildScrollView(
         child: Responsive(
-          mobile: MobileSignupScreen(),
           desktop: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Expanded(child: SignUpScreenTopImage()),
+              Expanded(
+                child: SignUpScreenTopImage(),
+              ),
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SizedBox(width: 450, child: SignUpForm()),
-                    SizedBox(height: defaultPadding / 2),
-                    // SocalSignUp()
+                    Text(
+                      "Create Account",
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: kPrimaryColor,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      "Join HealthMate and start your wellness journey",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Spacer(),
+                        Expanded(
+                          flex: 8,
+                          child: SignUpForm(),
+                        ),
+                        Spacer(),
+                      ],
+                    ),
                   ],
                 ),
               ),
             ],
           ),
+          mobile: MobileSignupScreen(),
         ),
       ),
     );
@@ -42,16 +70,30 @@ class MobileSignupScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
+      children: [
         SignUpScreenTopImage(),
-        Row(
-          children: [
-            Spacer(),
-            Expanded(flex: 8, child: SignUpForm()),
-            Spacer(),
-          ],
+        SizedBox(height: 24),
+        Text(
+          "Create Account",
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: kPrimaryColor,
+          ),
         ),
-        // const SocalSignUp()
+        SizedBox(height: 12),
+        Text(
+          "Join HealthMate and start your wellness journey",
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.black54,
+          ),
+        ),
+        SizedBox(height: 24),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.0),
+          child: SignUpForm(),
+        ),
       ],
     );
   }

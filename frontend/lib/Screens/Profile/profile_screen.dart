@@ -47,7 +47,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         fullNameController.text = data['full_name'] ?? '';
         dobController.text = data['date_of_birth'] ?? '';
-        selectedGender = (data['gender'] ?? '').toString().toLowerCase();
+        // Ensure gender is one of the valid options
+        String gender = (data['gender'] ?? '').toString().toLowerCase();
+        selectedGender = ['male', 'female', 'other'].contains(gender) ? gender : null;
         genderController.text = selectedGender ?? '';
         contactController.text = data['contact_number'] ?? '';
         role = data['role'] ?? 'patient';
@@ -179,10 +181,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   DropdownMenuItem(value: 'other', child: Text('Other')),
                 ],
                 onChanged: (String? newValue) {
-                  setState(() {
-                    selectedGender = newValue;
-                    genderController.text = newValue ?? '';
-                  });
+                  if (newValue != null) {
+                    setState(() {
+                      selectedGender = newValue;
+                      genderController.text = newValue;
+                    });
+                  }
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) {

@@ -5,14 +5,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:frontend/Screens/Profile/profile_screen.dart';
-
-class Message {
-  final String text;
-  final bool isUser;
-  final DateTime timestamp;
-
-  Message({required this.text, required this.isUser, required this.timestamp});
-}
+import 'package:frontend/constants.dart';
 
 class ConversationalScreen extends StatefulWidget {
   final String token;
@@ -26,9 +19,6 @@ class ConversationalScreen extends StatefulWidget {
 class _ConversationalScreenState extends State<ConversationalScreen> with SingleTickerProviderStateMixin {
   final SpeechToText _speechToText = SpeechToText();
   final FlutterTts _flutterTts = FlutterTts();
-  final List<Message> _messages = [];
-  final ScrollController _scrollController = ScrollController();
-  
   bool _speechEnabled = false;
   bool _isListening = false;
   bool _isSpeaking = false;
@@ -50,11 +40,6 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Single
     // Add welcome message
     _currentResponse = "Hello! I'm Dr. Amy, your HealthMate assistant. How can I help you today?";
     _speakResponse(_currentResponse);
-    _messages.add(Message(
-      text: _currentResponse,
-      isUser: false,
-      timestamp: DateTime.now(),
-    ));
   }
 
   void _initAnimations() {
@@ -81,8 +66,9 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Single
 
   Future<void> _initTts() async {
     await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setPitch(1.0);
-    await _flutterTts.setSpeechRate(0.5);
+    await _flutterTts.setPitch(1.1);
+    await _flutterTts.setSpeechRate(0.8);
+    await _flutterTts.setVoice({"name": "en-US-Neural2-F", "locale": "en-US"});
   }
 
   Future<void> _toggleListening() async {
@@ -93,11 +79,6 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Single
     if (_isListening) {
       await _speechToText.stop();
       if (_lastWords.isNotEmpty) {
-        _messages.add(Message(
-          text: _lastWords,
-          isUser: true,
-          timestamp: DateTime.now(),
-        ));
         await _getAIResponse(_lastWords);
         _lastWords = '';
       }
@@ -115,19 +96,6 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Single
     }
     setState(() {
       _isListening = !_isListening;
-    });
-    _scrollToBottom();
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
     });
   }
 
@@ -160,37 +128,21 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Single
         final aiResponse = data['response'];
         setState(() {
           _currentResponse = aiResponse;
-          _messages.add(Message(
-            text: aiResponse,
-            isUser: false,
-            timestamp: DateTime.now(),
-          ));
         });
         await _speakResponse(aiResponse);
       } else {
         setState(() {
           _currentResponse = 'Sorry, I encountered an error. Please try again.';
-          _messages.add(Message(
-            text: _currentResponse,
-            isUser: false,
-            timestamp: DateTime.now(),
-          ));
         });
       }
     } catch (e) {
       setState(() {
         _currentResponse = 'Network error. Please check your connection.';
-        _messages.add(Message(
-          text: _currentResponse,
-          isUser: false,
-          timestamp: DateTime.now(),
-        ));
       });
     } finally {
       setState(() {
         _isLoading = false;
       });
-      _scrollToBottom();
     }
   }
 
@@ -213,44 +165,15 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Single
     _speechToText.stop();
     _flutterTts.stop();
     _animationController.dispose();
-    _scrollController.dispose();
     super.dispose();
-  }
-
-  Widget _buildMessageBubble(Message message) {
-    return Align(
-      alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: message.isUser ? Colors.blue.shade600 : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Text(
-          message.text,
-          style: TextStyle(
-            color: message.isUser ? Colors.white : Colors.black87,
-            fontSize: 16,
-          ),
-        ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: kPrimaryColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -277,102 +200,105 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Single
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.blue.shade900,
-                  Colors.black,
+                  kPrimaryColor,
+                  Colors.white,
                 ],
               ),
             ),
           ),
           
           // Main content
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Assistant's response
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                child: Text(
-                  _currentResponse,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w300,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              
-              const SizedBox(height: 48),
-              
-              // Voice button with animations
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Ripple effect
-                  if (_isListening || _isSpeaking)
-                    AnimatedBuilder(
-                      animation: _rippleAnimation,
-                      builder: (context, child) {
-                        return Transform.scale(
-                          scale: _rippleAnimation.value,
-                          child: Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.blue.withOpacity(0.2),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  
-                  // Main button
-                  GestureDetector(
-                    onTap: _toggleListening,
-                    child: AnimatedBuilder(
-                      animation: _scaleAnimation,
-                      builder: (context, child) {
-                        return Transform.scale(
-                          scale: (_isListening || _isSpeaking) ? _scaleAnimation.value : 1.0,
-                          child: Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _isListening ? Colors.red : Colors.blue,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: (_isListening ? Colors.red : Colors.blue).withOpacity(0.3),
-                                  blurRadius: 20,
-                                  spreadRadius: 5,
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              _isListening ? Icons.mic : Icons.mic_none,
-                              color: Colors.white,
-                              size: 40,
-                            ),
-                          ),
-                        );
-                      },
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Current response
+                if (_currentResponse.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    child: Text(
+                      _currentResponse,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
-                ],
-              ),
-              
-              const SizedBox(height: 32),
-              
-              // Status text
-              Text(
-                _isListening ? 'Listening...' : 'Tap to speak',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: 16,
+                
+                const SizedBox(height: 48),
+                
+                // Voice button section
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Ripple effect
+                    if (_isListening || _isSpeaking)
+                      AnimatedBuilder(
+                        animation: _rippleAnimation,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: _rippleAnimation.value,
+                            child: Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: kPrimaryColor.withOpacity(0.2),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    
+                    // Main button
+                    GestureDetector(
+                      onTap: _toggleListening,
+                      child: AnimatedBuilder(
+                        animation: _scaleAnimation,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: (_isListening || _isSpeaking) ? _scaleAnimation.value : 1.0,
+                            child: Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _isListening ? Colors.red : kPrimaryColor,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: (_isListening ? Colors.red : kPrimaryColor).withOpacity(0.3),
+                                    blurRadius: 20,
+                                    spreadRadius: 5,
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                _isListening ? Icons.mic : Icons.mic_none,
+                                color: Colors.white,
+                                size: 40,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                
+                const SizedBox(height: 16),
+                
+                // Status text
+                Text(
+                  _isListening ? 'Listening...' : 'Tap to speak',
+                  style: TextStyle(
+                    color: Colors.black87.withOpacity(0.7),
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
           ),
           
           // Loading indicator
@@ -381,7 +307,7 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Single
               color: Colors.black.withOpacity(0.5),
               child: const Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(kPrimaryColor),
                 ),
               ),
             ),

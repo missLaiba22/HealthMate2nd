@@ -18,7 +18,31 @@ class WelcomeScreen extends StatelessWidget {
             desktop: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Expanded(child: WelcomeImage()),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "Welcome to HealthMate",
+                        style: TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: kPrimaryColor,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        "Your AI-Powered Health Assistant",
+                        style: TextStyle(
+                          fontSize: 24,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      SizedBox(height: 40),
+                      WelcomeImage(),
+                    ],
+                  ),
+                ),
                 Expanded(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -47,6 +71,25 @@ class MobileWelcomeScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
+          Text(
+            "Welcome to HealthMate",
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: kPrimaryColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 16),
+          Text(
+            "Your AI-Powered Health Assistant",
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.black54,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 32),
           WelcomeImage(),
           SizedBox(height: defaultPadding),
           LoginAndSignupBtn(),

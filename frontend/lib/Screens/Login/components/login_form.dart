@@ -31,7 +31,7 @@ class _LoginFormState extends State<LoginForm> {
       isLoading = true;
     });
 
-    final url = Uri.parse('http://localhost:8000/auth/login');
+    final url = Uri.parse('http://192.168.18.60:8000/auth/login');
 
     try {
       final response = await http.post(

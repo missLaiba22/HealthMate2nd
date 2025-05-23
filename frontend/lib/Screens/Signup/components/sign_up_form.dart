@@ -27,7 +27,7 @@ class _SignUpFormState extends State<SignUpForm> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8000/auth/signup'),
+        Uri.parse('http://192.168.18.60:8000/auth/signup'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': _emailController.text,
@@ -39,7 +39,7 @@ class _SignUpFormState extends State<SignUpForm> {
       if (response.statusCode == 200) {
         // Sign up successful, now login
         final loginResponse = await http.post(
-          Uri.parse('http://localhost:8000/auth/login'),
+          Uri.parse('http://192.168.18.60:8000/auth/login'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
             'email': _emailController.text,

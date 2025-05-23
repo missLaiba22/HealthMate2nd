@@ -73,7 +73,7 @@ class _ScanAnalysisScreenState extends State<ScanAnalysisScreen> {
 
       // Make API request
       final response = await http.post(
-        Uri.parse('http://localhost:8000/scan/analyze'),
+        Uri.parse('http://192.168.18.60:8000/scan/analyze'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${widget.token}',

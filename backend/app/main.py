@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import auth_routes, chat_routes, profile_routes
 from app.routes import register_routes 
+from .controllers import scan_controller, speech_controller, chat_controller
 
 app = FastAPI()
 
@@ -23,15 +24,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routes
-app.include_router(auth_routes.router, prefix="/auth")
-app.include_router(register_routes.router, prefix="/register")
-app.include_router(chat_routes.router)  # Chat routes already have prefix="/chat"
-app.include_router(profile_routes.router)
-
+# Include routes with consistent prefixes
+app.include_router(auth_routes.router, prefix="/auth", tags=["auth"])
+app.include_router(register_routes.router, prefix="/register", tags=["register"])
+app.include_router(chat_routes.router, prefix="/chat", tags=["chat"])
+app.include_router(profile_routes.router, prefix="/profile", tags=["profile"])
+app.include_router(scan_controller.router, prefix="/scan", tags=["scan"])
+app.include_router(speech_controller.router, prefix="/speech", tags=["speech"])
 
 # app.include_router(user_routes.router, prefix="/users")
 # app.include_router(scan_routes.router, prefix="/scans")
 # app.include_router(appointment_routes.router, prefix="/appointments")
 # app.include_router(report_routes.router, prefix="/reports")
+
+@app.get("/")
+async def root():
+    return {"message": "HealthMate API is running"}
 

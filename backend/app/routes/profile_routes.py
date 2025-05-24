@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from app.utils.jwt import get_current_user
 from app.database import db
 
-router = APIRouter(prefix="/profile", tags=["Profile"])
+router = APIRouter(tags=["Profile"])
 
 @router.get("/")
 def get_profile(current_user=Depends(get_current_user)):

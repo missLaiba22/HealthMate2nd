@@ -6,10 +6,12 @@ import 'package:frontend/constants.dart';
 
 class HomeScreen extends StatefulWidget {
   final String token;
+  final String email;
 
   const HomeScreen({
     Key? key,
     required this.token,
+    required this.email,
   }) : super(key: key);
 
   @override
@@ -25,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _screens.addAll([
-      ConversationalScreen(token: widget.token),
+      ConversationalScreen(token: widget.token, email: widget.email),
       ScanAnalysisScreen(token: widget.token),
       ProfileScreen(token: widget.token),
     ]);

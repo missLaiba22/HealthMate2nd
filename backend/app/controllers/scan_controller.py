@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from fastapi import APIRouter, HTTPException
 from app.services.scan_service import ScanAnalysisService
 import logging
 
@@ -6,8 +6,12 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Create router
+router = APIRouter()
+
 scan_service = ScanAnalysisService()
 
+@router.post("/analyze")
 async def analyze_scan(image_data: str, scan_type: str, target_area: str):
     """
     Controller function to handle scan analysis requests

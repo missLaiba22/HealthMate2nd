@@ -11,7 +11,7 @@ dependencies:
     sdk: flutter
 
   # UI and Design
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^1.0.2
   flutter_svg: ^2.0.10+1           # For SVG images like avatars
   google_fonts: ^6.1.0             # To use custom Google fonts
 
@@ -19,32 +19,32 @@ dependencies:
   provider: ^6.1.2                 # For state management
 
   # HTTP & WebSocket Communication
-  http: ^1.2.1
+  http: ^1.1.0
   web_socket_channel: ^2.4.0       # WebSocket support for chat/audio
 
   # Storage
   shared_preferences: ^2.2.2
 
   # Voice Features
-  speech_to_text: ^6.6.0
-  flutter_tts: ^3.8.5
+  flutter_tts: ^3.8.5             # For text-to-speech
+  record: ^6.0.0                  # For audio recording
 
   # Permission Handling
-  permission_handler: ^11.3.1      # To request microphone/audio permissions
+  permission_handler: ^11.4.0      # For microphone permissions
   logging: ^1.2.0 
 
   # Image Handling
   image_picker: ^1.0.7             # For picking images from gallery/camera
 
   # Others
-  path_provider: ^2.1.2            # For storing temporary files
+  path_provider: ^2.1.1            # For storing temporary files
   path: ^1.9.0                     # Path manipulation
   uuid: ^4.2.2                     # For generating unique IDs
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^2.0.3
 
 flutter:
   uses-material-design: true

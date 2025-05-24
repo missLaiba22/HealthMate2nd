@@ -59,11 +59,14 @@ class _LoginFormState extends State<LoginForm> {
             const SnackBar(content: Text("Login successful!")),
           );
 
-          // Navigate to home screen
+          // Navigate to conversational engine
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => HomeScreen(token: token),
+              builder: (context) => ConversationalScreen(
+                token: token,
+                email: emailController.text.trim(),
+              ),
             ),
           );
         }

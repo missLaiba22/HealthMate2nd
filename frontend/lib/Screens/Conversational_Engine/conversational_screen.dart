@@ -1,29 +1,30 @@
-import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:speech_to_text/speech_to_text.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
-import 'package:permission_handler/permission_handler.dart';
+import 'dart:convert';
 import 'package:frontend/Screens/Profile/profile_screen.dart';
 import 'package:frontend/constants.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class ConversationalScreen extends StatefulWidget {
   final String token;
+  final String email;
 
-  const ConversationalScreen({super.key, required this.token});
+  const ConversationalScreen({super.key, required this.token, required this.email});
 
   @override
   State<ConversationalScreen> createState() => _ConversationalScreenState();
 }
 
-class _ConversationalScreenState extends State<ConversationalScreen> with SingleTickerProviderStateMixin {
-  final SpeechToText _speechToText = SpeechToText();
-  final FlutterTts _flutterTts = FlutterTts();
-  bool _speechEnabled = false;
-  bool _isListening = false;
+class _ConversationalScreenState extends State<ConversationalScreen> with TickerProviderStateMixin {
+  final _audioRecorder = AudioRecorder();
+  final _flutterTts = FlutterTts();
+  bool _isRecording = false;
+  String _transcribedText = '';
+  bool _isProcessing = false;
   bool _isSpeaking = false;
-  String _lastWords = '';
-  bool _isLoading = false;
   String _currentResponse = '';
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -32,14 +33,19 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Single
   @override
   void initState() {
     super.initState();
-    _initSpeech();
-    _initTts();
-    _requestPermissions();
+    _initRecorder();
     _initAnimations();
+    _initTts();
     
     // Add welcome message
     _currentResponse = "Hello! I'm Dr. Amy, your HealthMate assistant. How can I help you today?";
     _speakResponse(_currentResponse);
+  }
+
+  Future<void> _initTts() async {
+    await _flutterTts.setLanguage("en-US");
+    await _flutterTts.setPitch(1.0);
+    await _flutterTts.setSpeechRate(0.5);
   }
 
   void _initAnimations() {
@@ -55,93 +61,129 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Single
     );
   }
 
-  Future<void> _requestPermissions() async {
-    await Permission.microphone.request();
-  }
-
-  Future<void> _initSpeech() async {
-    _speechEnabled = await _speechToText.initialize();
-    setState(() {});
-  }
-
-  Future<void> _initTts() async {
-    await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setPitch(1.1);
-    await _flutterTts.setSpeechRate(0.8);
-    await _flutterTts.setVoice({"name": "en-US-Neural2-F", "locale": "en-US"});
-  }
-
-  Future<void> _toggleListening() async {
-    if (!_speechEnabled) {
-      await _initSpeech();
-    }
-
-    if (_isListening) {
-      await _speechToText.stop();
-      if (_lastWords.isNotEmpty) {
-        await _getAIResponse(_lastWords);
-        _lastWords = '';
+  Future<void> _initRecorder() async {
+    try {
+      final hasPermission = await _audioRecorder.hasPermission();
+      if (!hasPermission) {
+        throw Exception('No permission to record audio');
       }
-    } else {
-      await _speechToText.listen(
-        onResult: _onSpeechResult,
-        listenFor: const Duration(seconds: 30),
-        localeId: "en_US",
-        cancelOnError: true,
-        partialResults: true,
-      );
+    } catch (e) {
+      print('Error initializing recorder: $e');
+    }
+  }
+
+  Future<void> _startRecording() async {
+    try {
+      if (await _audioRecorder.hasPermission()) {
+        final directory = await getTemporaryDirectory();
+        final filePath = '${directory.path}/audio_recording.wav';
+        
+        await _audioRecorder.start(
+          RecordConfig(
+            encoder: AudioEncoder.wav,
+            sampleRate: 16000,
+          ),
+          path: filePath,
+        );
+        
+        setState(() {
+          _isRecording = true;
+        });
+      }
+    } catch (e) {
+      print('Error starting recording: $e');
+    }
+  }
+
+  Future<void> _stopRecording() async {
+    try {
+      final path = await _audioRecorder.stop();
       setState(() {
-        _currentResponse = "I'm listening...";
+        _isRecording = false;
+        _isProcessing = true;
+      });
+
+      if (path != null) {
+        await _transcribeAudio(path);
+      }
+    } catch (e) {
+      print('Error stopping recording: $e');
+      setState(() {
+        _isProcessing = false;
       });
     }
-    setState(() {
-      _isListening = !_isListening;
-    });
   }
 
-  void _onSpeechResult(result) {
-    setState(() {
-      _lastWords = result.recognizedWords;
-      if (_lastWords.isNotEmpty) {
-        _currentResponse = "You said: $_lastWords";
+  Future<void> _transcribeAudio(String filePath) async {
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('http://192.168.18.60:8000/speech/transcribe'),
+      );
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'audio_file',
+          filePath,
+        ),
+      );
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+      final data = json.decode(responseBody);
+
+      setState(() {
+        _transcribedText = data['text'];
+        _isProcessing = false;
+      });
+
+      if (_transcribedText.isNotEmpty) {
+        await _getAIResponse(_transcribedText);
       }
-    });
+    } catch (e) {
+      print('Error transcribing audio: $e');
+      setState(() {
+        _isProcessing = false;
+      });
+    }
   }
 
   Future<void> _getAIResponse(String message) async {
     setState(() {
-      _isLoading = true;
+      _isProcessing = true;
     });
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8000/chat/'),
+        Uri.parse('http://192.168.18.60:8000/chat'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${widget.token}',
         },
-        body: jsonEncode({'message': message}),
+        body: jsonEncode({
+          'message': message,
+        }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final aiResponse = data['response'];
         setState(() {
-          _currentResponse = aiResponse;
+          _currentResponse = data['response'];
         });
-        await _speakResponse(aiResponse);
+        await _speakResponse(data['response']);
       } else {
         setState(() {
           _currentResponse = 'Sorry, I encountered an error. Please try again.';
         });
       }
     } catch (e) {
+      print('Error getting AI response: $e');
       setState(() {
         _currentResponse = 'Network error. Please check your connection.';
       });
     } finally {
       setState(() {
-        _isLoading = false;
+        _isProcessing = false;
       });
     }
   }
@@ -158,14 +200,6 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Single
       });
       _animationController.stop();
     }
-  }
-
-  @override
-  void dispose() {
-    _speechToText.stop();
-    _flutterTts.stop();
-    _animationController.dispose();
-    super.dispose();
   }
 
   @override
@@ -234,50 +268,47 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Single
                   alignment: Alignment.center,
                   children: [
                     // Ripple effect
-                    if (_isListening || _isSpeaking)
+                    if (_isRecording)
                       AnimatedBuilder(
                         animation: _rippleAnimation,
                         builder: (context, child) {
-                          return Transform.scale(
-                            scale: _rippleAnimation.value,
-                            child: Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: kPrimaryColor.withOpacity(0.2),
-                              ),
+                          return Container(
+                            width: 100 * _rippleAnimation.value,
+                            height: 100 * _rippleAnimation.value,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: kPrimaryColor.withOpacity(0.2),
                             ),
                           );
                         },
                       ),
                     
-                    // Main button
+                    // Record button
                     GestureDetector(
-                      onTap: _toggleListening,
+                      onTap: _isRecording ? _stopRecording : _startRecording,
                       child: AnimatedBuilder(
                         animation: _scaleAnimation,
                         builder: (context, child) {
                           return Transform.scale(
-                            scale: (_isListening || _isSpeaking) ? _scaleAnimation.value : 1.0,
+                            scale: _isRecording ? _scaleAnimation.value : 1.0,
                             child: Container(
                               width: 80,
                               height: 80,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: _isListening ? Colors.red : kPrimaryColor,
+                                color: _isRecording ? Colors.red : kPrimaryColor,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: (_isListening ? Colors.red : kPrimaryColor).withOpacity(0.3),
-                                    blurRadius: 20,
-                                    spreadRadius: 5,
+                                    color: kPrimaryColor.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
                                   ),
                                 ],
                               ),
                               child: Icon(
-                                _isListening ? Icons.mic : Icons.mic_none,
+                                _isRecording ? Icons.stop : Icons.mic,
                                 color: Colors.white,
-                                size: 40,
+                                size: 32,
                               ),
                             ),
                           );
@@ -287,32 +318,38 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Single
                   ],
                 ),
                 
-                const SizedBox(height: 16),
+                const SizedBox(height: 32),
                 
                 // Status text
-                Text(
-                  _isListening ? 'Listening...' : 'Tap to speak',
-                  style: TextStyle(
-                    color: Colors.black87.withOpacity(0.7),
-                    fontSize: 16,
+                if (_isProcessing)
+                  const Text(
+                    'Processing...',
+                    style: TextStyle(
+                      color: Colors.black54,
+                      fontSize: 16,
+                    ),
+                  )
+                else if (_isRecording)
+                  const Text(
+                    'Recording...',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontSize: 16,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
-          
-          // Loading indicator
-          if (_isLoading)
-            Container(
-              color: Colors.black.withOpacity(0.5),
-              child: const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(kPrimaryColor),
-                ),
-              ),
-            ),
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _audioRecorder.dispose();
+    _flutterTts.stop();
+    super.dispose();
   }
 }

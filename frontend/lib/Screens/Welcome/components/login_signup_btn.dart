@@ -46,19 +46,6 @@ class LoginAndSignupBtn extends StatelessWidget {
           ),
           child: Text("SIGN UP", style: const TextStyle(color: kPrimaryColor)),
         ),
-        const SizedBox(height: 24),
-        const Text("Or sign up with", style: TextStyle(color: Colors.grey)),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset("assets/icons/facebook.svg", height: 32),
-            const SizedBox(width: 20),
-            SvgPicture.asset("assets/icons/twitter.svg", height: 32),
-            const SizedBox(width: 20),
-            SvgPicture.asset("assets/icons/google-plus.svg", height: 32),
-          ],
-        ),
       ],
     );
   }

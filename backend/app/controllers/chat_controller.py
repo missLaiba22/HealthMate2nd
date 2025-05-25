@@ -22,7 +22,7 @@ async def chat_controller(request: ChatRequest, email: str) -> str:
     
     if any(keyword in request.message.lower() for keyword in emergency_keywords):
         emergency_message = ("IMPORTANT: If this is a medical emergency, immediately call your "
-                           "local emergency services (911 in the US) or go to the nearest "
+                           "local emergency services or go to the nearest "
                            "emergency room. Do not wait for an AI response.")
         try:
             ai_response = await get_ai_response(request.message, email)

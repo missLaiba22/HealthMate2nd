@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../../constants.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String token;
@@ -24,10 +25,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController specializationController = TextEditingController();
   final TextEditingController experienceController = TextEditingController();
 
-  bool shareHealthData = false;
   bool receiveNotifications = false;
   String role = "patient"; // default
-  String? selectedGender; // Add this line to track selected gender
+  String? selectedGender;
 
   final _formKey = GlobalKey<FormState>();
 
@@ -47,7 +47,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         fullNameController.text = data['full_name'] ?? '';
         dobController.text = data['date_of_birth'] ?? '';
-        // Ensure gender is one of the valid options
         String gender = (data['gender'] ?? '').toString().toLowerCase();
         selectedGender = ['male', 'female', 'other'].contains(gender) ? gender : null;
         genderController.text = selectedGender ?? '';
@@ -60,7 +59,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         licenseController.text = data['medical_license_number'] ?? '';
         specializationController.text = data['specialization'] ?? '';
         experienceController.text = data['years_of_experience']?.toString() ?? '';
-        shareHealthData = data['share_health_data'] ?? false;
         receiveNotifications = data['receive_notifications'] ?? false;
       });
     }
@@ -84,7 +82,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       "medical_license_number": licenseController.text,
       "specialization": specializationController.text,
       "years_of_experience": int.tryParse(experienceController.text) ?? 0,
-      "share_health_data": shareHealthData,
       "receive_notifications": receiveNotifications,
     };
 
@@ -112,233 +109,336 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool isPassword = false,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+    int maxLines = 1,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: controller,
+        obscureText: isPassword,
+        keyboardType: keyboardType,
+        validator: validator,
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: kPrimaryColor),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Profile'),
-        backgroundColor: Colors.blue.shade700,
-        foregroundColor: Colors.white,
+        backgroundColor: kPrimaryColor,
+        elevation: 0,
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: fullNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Full Name',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your full name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: dobController,
-                decoration: const InputDecoration(
-                  labelText: 'Date of Birth',
-                  border: OutlineInputBorder(),
-                ),
-                readOnly: true,
-                onTap: () async {
-                  final DateTime? picked = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(1900),
-                    lastDate: DateTime.now(),
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      dobController.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
-                    });
-                  }
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please select your date of birth';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: selectedGender,
-                decoration: const InputDecoration(
-                  labelText: 'Gender',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'male', child: Text('Male')),
-                  DropdownMenuItem(value: 'female', child: Text('Female')),
-                  DropdownMenuItem(value: 'other', child: Text('Other')),
-                ],
-                onChanged: (String? newValue) {
-                  if (newValue != null) {
-                    setState(() {
-                      selectedGender = newValue;
-                      genderController.text = newValue;
-                    });
-                  }
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please select your gender';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: contactController,
-                decoration: const InputDecoration(
-                  labelText: 'Contact Number',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your contact number';
-                  }
-                  if (!RegExp(r'^\+?[\d\s-]{10,}$').hasMatch(value)) {
-                    return 'Please enter a valid phone number';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              if (role == 'patient') ...[
-                TextFormField(
-                  controller: medicalConditionsController,
-                  decoration: const InputDecoration(
-                    labelText: 'Medical Conditions (comma-separated)',
-                    border: OutlineInputBorder(),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 10,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
                   ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: allergiesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Allergies (comma-separated)',
-                    border: OutlineInputBorder(),
+                  child: Column(
+                    children: [
+                      _buildTextField(
+                        controller: fullNameController,
+                        label: 'Full Name',
+                        icon: Icons.person_outline,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your full name';
+                          }
+                          return null;
+                        },
+                      ),
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(15),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 10,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: TextFormField(
+                          controller: dobController,
+                          readOnly: true,
+                          onTap: () async {
+                            final DateTime? picked = await showDatePicker(
+                              context: context,
+                              initialDate: DateTime.now(),
+                              firstDate: DateTime(1900),
+                              lastDate: DateTime.now(),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: ColorScheme.light(
+                                      primary: kPrimaryColor,
+                                      onPrimary: Colors.white,
+                                      surface: Colors.white,
+                                      onSurface: Colors.black,
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              setState(() {
+                                dobController.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+                              });
+                            }
+                          },
+                          decoration: InputDecoration(
+                            labelText: 'Date of Birth',
+                            prefixIcon: Icon(Icons.calendar_today_outlined, color: kPrimaryColor),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please select your date of birth';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(15),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 10,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: DropdownButtonFormField<String>(
+                          value: selectedGender,
+                          decoration: InputDecoration(
+                            labelText: 'Gender',
+                            prefixIcon: Icon(Icons.person_outline, color: kPrimaryColor),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'male', child: Text('Male')),
+                            DropdownMenuItem(value: 'female', child: Text('Female')),
+                            DropdownMenuItem(value: 'other', child: Text('Other')),
+                          ],
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                selectedGender = newValue;
+                                genderController.text = newValue;
+                              });
+                            }
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please select your gender';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      _buildTextField(
+                        controller: contactController,
+                        label: 'Contact Number',
+                        icon: Icons.phone_outlined,
+                        keyboardType: TextInputType.phone,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your contact number';
+                          }
+                          if (!RegExp(r'^\+?[\d\s-]{10,}$').hasMatch(value)) {
+                            return 'Please enter a valid phone number';
+                          }
+                          return null;
+                        },
+                      ),
+                      if (role == 'patient') ...[
+                        _buildTextField(
+                          controller: medicalConditionsController,
+                          label: 'Medical Conditions (comma-separated)',
+                          icon: Icons.medical_services_outlined,
+                          maxLines: 2,
+                        ),
+                        _buildTextField(
+                          controller: allergiesController,
+                          label: 'Allergies (comma-separated)',
+                          icon: Icons.warning_amber_outlined,
+                          maxLines: 2,
+                        ),
+                        _buildTextField(
+                          controller: medicationsController,
+                          label: 'Current Medications (comma-separated)',
+                          icon: Icons.medication_outlined,
+                          maxLines: 2,
+                        ),
+                        _buildTextField(
+                          controller: emergencyContactController,
+                          label: 'Emergency Contact',
+                          icon: Icons.emergency_outlined,
+                          keyboardType: TextInputType.phone,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter emergency contact number';
+                            }
+                            if (!RegExp(r'^\+?[\d\s-]{10,}$').hasMatch(value)) {
+                              return 'Please enter a valid phone number';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                      if (role == 'doctor') ...[
+                        _buildTextField(
+                          controller: licenseController,
+                          label: 'Medical License Number',
+                          icon: Icons.badge_outlined,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your medical license number';
+                            }
+                            return null;
+                          },
+                        ),
+                        _buildTextField(
+                          controller: specializationController,
+                          label: 'Specialization',
+                          icon: Icons.medical_services_outlined,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your specialization';
+                            }
+                            return null;
+                          },
+                        ),
+                        _buildTextField(
+                          controller: experienceController,
+                          label: 'Years of Experience',
+                          icon: Icons.work_outline,
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter years of experience';
+                            }
+                            if (int.tryParse(value) == null) {
+                              return 'Please enter a valid number';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ],
                   ),
-                  maxLines: 2,
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: medicationsController,
-                  decoration: const InputDecoration(
-                    labelText: 'Current Medications (comma-separated)',
-                    border: OutlineInputBorder(),
+                const SizedBox(height: 24),
+                SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kPrimaryColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Save Profile',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: emergencyContactController,
-                  decoration: const InputDecoration(
-                    labelText: 'Emergency Contact',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter emergency contact number';
-                    }
-                    if (!RegExp(r'^\+?[\d\s-]{10,}$').hasMatch(value)) {
-                      return 'Please enter a valid phone number';
-                    }
-                    return null;
-                  },
                 ),
               ],
-              if (role == 'doctor') ...[
-                TextFormField(
-                  controller: licenseController,
-                  decoration: const InputDecoration(
-                    labelText: 'Medical License Number',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your medical license number';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: specializationController,
-                  decoration: const InputDecoration(
-                    labelText: 'Specialization',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your specialization';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: experienceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Years of Experience',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter years of experience';
-                    }
-                    if (int.tryParse(value) == null) {
-                      return 'Please enter a valid number';
-                    }
-                    return null;
-                  },
-                ),
-              ],
-              const SizedBox(height: 16),
-              SwitchListTile(
-                title: const Text('Share Health Data'),
-                subtitle: const Text('Allow sharing of health data for better care'),
-                value: shareHealthData,
-                onChanged: (bool value) {
-                  setState(() {
-                    shareHealthData = value;
-                  });
-                },
-              ),
-              SwitchListTile(
-                title: const Text('Receive Notifications'),
-                subtitle: const Text('Get updates about appointments and health tips'),
-                value: receiveNotifications,
-                onChanged: (bool value) {
-                  setState(() {
-                    receiveNotifications = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: saveProfile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade700,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text('Save Profile'),
-              ),
-            ],
+            ),
           ),
         ),
       ),

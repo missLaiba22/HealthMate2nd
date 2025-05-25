@@ -40,20 +40,44 @@ async def get_ai_response(message: str, email: str) -> str:
         {"role": "user", "content": prompt}
     ]
     
-    # Get response from OpenAI
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=messages,
-        temperature=0.7,
-        max_tokens=150  # Keep responses concise
-    )
-    
-    # Extract and process response
-    ai_response = response.choices[0].message.content
-    
-    # Update conversation history
-    history.add_message("user", message)
-    history.add_message("assistant", ai_response)
-    
-    # Add disclaimer if needed
-    return prompt_engine.add_medical_disclaimer(ai_response)
+    try:
+        # Get response from OpenAI using GPT-4.1
+        response = client.chat.completions.create(
+            model="gpt-4-1106-preview",  # Using GPT-4.1
+            messages=messages,
+            temperature=0.3,  # Lower temperature for more focused responses
+            max_tokens=100,   # Reduced token limit for shorter responses
+            top_p=0.9,        # Nucleus sampling for better response quality
+            frequency_penalty=0.3,  # Reduce repetition
+            presence_penalty=0.3,   # Encourage diverse responses
+            response_format={"type": "text"},  # Ensure text responses
+            seed=42  # For consistent responses
+        )
+        
+        # Extract and process response
+        ai_response = response.choices[0].message.content
+        
+        # Update conversation history
+        history.add_message("user", message)
+        history.add_message("assistant", ai_response)
+        
+        # Add disclaimer if needed
+        return prompt_engine.add_medical_disclaimer(ai_response)
+        
+    except Exception as e:
+        logger.error(f"Error getting AI response: {str(e)}")
+        # Fallback to GPT-3.5 if GPT-4.1 fails
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=messages,
+                temperature=0.3,
+                max_tokens=100
+            )
+            ai_response = response.choices[0].message.content
+            history.add_message("user", message)
+            history.add_message("assistant", ai_response)
+            return prompt_engine.add_medical_disclaimer(ai_response)
+        except Exception as fallback_error:
+            logger.error(f"Fallback error: {str(fallback_error)}")
+            return "I apologize, but I'm having trouble processing your request right now. Please try again in a few moments."

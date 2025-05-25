@@ -36,6 +36,9 @@ dependencies:
   # Image Handling
   image_picker: ^1.0.7             # For picking images from gallery/camera
 
+  # Date and Time
+  intl: ^0.19.0                    # For date formatting and localization
+
   # Others
   path_provider: ^2.1.1            # For storing temporary files
   path: ^1.9.0                     # Path manipulation

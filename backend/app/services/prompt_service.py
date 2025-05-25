@@ -2,27 +2,22 @@ from typing import List, Dict
 
 class MedicalPromptEngine:
     def __init__(self):
-        self.system_context = """You are Amy, a focused medical assistant AI. Your role is strictly limited to health-related topics:
-
-1. ONLY respond to health, medical, and wellness-related queries
-2. For non-health topics, politely explain that you can only discuss health matters
-3. Keep responses brief and friendly (2-3 sentences)
+        self.system_context = """You are a focused medical assistant AI. Keep responses brief and friendly (1-2 sentences).
 
 Core responsibilities:
 - Medical information and explanations
-- Symptom discussion
+- Symptom discussion and assessment
 - General health guidance
 - Wellness and lifestyle advice
-- Medical terminology explanation
-
-If user asks about non-health topics (like entertainment, politics, general chat, etc.), respond:
-"I'm your medical assistant, focused on helping you with health-related questions. Could we discuss your health concerns instead?"
+- OTC medication suggestions for mild conditions
 
 Remember:
-- Stay strictly within medical/health domain
+- Stay within medical/health domain
 - Show empathy while maintaining boundaries
-- Keep medical disclaimers clear but brief
-- Never diagnose, only suggest possibilities"""
+- Keep responses concise and clear
+- Never diagnose, only suggest possibilities
+- Ask follow-up questions when needed
+- Only suggest OTC medications for mild conditions"""
 
         # Initialize comprehensive health-related keyword sets
         self.symptoms = {
@@ -59,6 +54,43 @@ Remember:
             'meditation', 'sleep', 'rest', 'stress', 'mental health', 'wellness',
             'lifestyle', 'healthy', 'vitamin', 'supplement', 'prevention',
             'immunity', 'weight', 'bmi', 'blood pressure', 'cholesterol'
+        }
+
+        # Add OTC medication categories
+        self.otc_medications = {
+            'pain_relievers': {
+                'acetaminophen', 'ibuprofen', 'aspirin', 'naproxen'
+            },
+            'cold_flu': {
+                'decongestants', 'antihistamines', 'cough_suppressants',
+                'expectorants', 'throat_lozenges'
+            },
+            'digestive': {
+                'antacids', 'laxatives', 'anti-diarrheals', 'anti-nausea'
+            },
+            'allergy': {
+                'antihistamines', 'nasal_sprays', 'eye_drops'
+            },
+            'topical': {
+                'antibiotic_ointments', 'antifungal_creams', 'hydrocortisone',
+                'pain_relieving_creams'
+            }
+        }
+
+        # Add severity indicators
+        self.severity_indicators = {
+            'mild': {
+                'slight', 'minor', 'manageable', 'bearable', 'tolerable',
+                'intermittent', 'occasional'
+            },
+            'moderate': {
+                'persistent', 'regular', 'noticeable', 'uncomfortable',
+                'distracting', 'recurring'
+            },
+            'severe': {
+                'intense', 'severe', 'debilitating', 'unbearable', 'constant',
+                'worsening', 'acute', 'chronic'
+            }
         }
 
     def is_health_related(self, message: str) -> bool:
@@ -103,22 +135,35 @@ Remember:
     def create_response_prompt(self, message: str) -> str:
         """Create appropriate prompt based on message content."""
         if not self.is_health_related(message):
-            return ("I notice you're asking about something outside of healthcare. "
-                   "I'm your medical assistant, focused on helping you with health-related questions. "
-                   "Would you like to discuss any health concerns instead?")
+            return "I'm your medical assistant. How can I help with your health concerns?"
         
         # For health-related queries, create appropriate specialized prompts
         if any(keyword in message.lower() for keyword in ['symptom', 'feel', 'pain', 'discomfort']):
-            return self.create_symptom_assessment_prompt(message)
+            return f"Briefly assess these symptoms: {message}"
         elif any(keyword in message.lower() for keyword in ['lifestyle', 'diet', 'exercise']):
-            return self.create_lifestyle_recommendation_prompt(message)
+            return f"Give brief lifestyle advice for: {message}"
         elif any(keyword in message.lower() for keyword in ['specialist', 'doctor', 'consultation']):
-            return self.create_specialist_referral_prompt(message)
+            return f"Briefly guide about medical consultation for: {message}"
+        elif any(keyword in message.lower() for keyword in ['medicine', 'medication', 'drug', 'pill']):
+            return f"Briefly assess medication query: {message}"
         
         return message
 
     def create_symptom_assessment_prompt(self, message: str) -> str:
-        return f"Help me understand these symptoms while being cautious and empathetic: {message}"
+        """Create a prompt for symptom assessment with follow-up questions."""
+        severity = self.assess_severity(message)
+        follow_up_questions = self.generate_follow_up_questions(message)
+        
+        prompt = f"""Help me understand these symptoms while being cautious and empathetic: {message}
+
+Severity assessment: {severity}
+Follow-up questions to ask:
+{follow_up_questions}
+
+Based on the severity, if mild, suggest appropriate OTC medications.
+If moderate or severe, recommend consulting a healthcare professional."""
+
+        return prompt
 
     def create_lifestyle_recommendation_prompt(self, message: str) -> str:
         return f"Suggest healthy lifestyle changes addressing: {message}"
@@ -126,8 +171,73 @@ Remember:
     def create_specialist_referral_prompt(self, message: str) -> str:
         return f"Guide about medical consultation regarding: {message}"
 
+    def create_medication_prompt(self, message: str) -> str:
+        """Create a prompt for medication-related queries."""
+        return f"""Assess the medication query: {message}
+
+Consider:
+1. Is this a request for OTC medication?
+2. What are the symptoms being treated?
+3. Are there any contraindications to consider?
+4. What is the appropriate dosage and duration?
+5. What are the potential side effects?
+
+Provide a response that:
+- Suggests appropriate OTC medications if applicable
+- Includes dosage and usage instructions
+- Mentions potential side effects
+- Recommends consulting a healthcare professional if needed"""
+
+    def assess_severity(self, message: str) -> str:
+        """Assess the severity of symptoms mentioned in the message."""
+        message = message.lower()
+        
+        # Check for severe indicators
+        if any(indicator in message for indicator in self.severity_indicators['severe']):
+            return "severe"
+        # Check for moderate indicators
+        elif any(indicator in message for indicator in self.severity_indicators['moderate']):
+            return "moderate"
+        # Default to mild if no severe/moderate indicators found
+        return "mild"
+
+    def generate_follow_up_questions(self, message: str) -> str:
+        """Generate relevant follow-up questions based on the symptoms mentioned."""
+        questions = []
+        message = message.lower()
+        
+        # General symptom questions
+        questions.append("How long have you been experiencing these symptoms?")
+        questions.append("Have you had these symptoms before?")
+        
+        # Pain-specific questions
+        if any(pain_word in message for pain_word in ['pain', 'ache', 'sore', 'discomfort']):
+            questions.append("On a scale of 1-10, how would you rate the pain?")
+            questions.append("Is the pain constant or does it come and go?")
+        
+        # Fever-related questions
+        if 'fever' in message:
+            questions.append("What is your current temperature?")
+            questions.append("Are you experiencing any other symptoms with the fever?")
+        
+        # Respiratory questions
+        if any(symptom in message for symptom in ['cough', 'congestion', 'runny nose', 'sore throat']):
+            questions.append("Are you experiencing any difficulty breathing?")
+            questions.append("Is there any mucus or phlegm?")
+        
+        return "\n".join(questions)
+
     def add_medical_disclaimer(self, response: str) -> str:
-        """Add medical disclaimer if response contains medical advice."""
-        if any(keyword in response.lower() for keyword in ['should', 'recommend', 'suggest', 'try', 'consider']):
-            return f"{response}\n\nRemember: This is general information. Always consult healthcare professionals for medical advice."
+        """Add medical disclaimer only for responses containing specific medical advice."""
+        # Keywords that indicate medical advice requiring disclaimer
+        medical_advice_keywords = {
+            'take', 'use', 'apply', 'prescribe', 'recommend', 'suggest',
+            'medication', 'medicine', 'drug', 'treatment', 'therapy',
+            'dosage', 'dose', 'side effects', 'contraindications'
+        }
+        
+        # Check if response contains medical advice
+        if any(keyword in response.lower() for keyword in medical_advice_keywords):
+            return f"{response}\nNote: Consult healthcare professionals for medical advice."
+        
         return response 

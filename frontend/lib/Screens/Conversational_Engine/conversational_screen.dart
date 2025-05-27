@@ -10,6 +10,7 @@ import 'package:frontend/Screens/role_selection/doctor_form.dart';
 import 'package:frontend/Screens/role_selection/patient_form.dart';
 import 'package:frontend/constants.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:frontend/Screens/Appointments/appointment_screen.dart';
 
 class ConversationalScreen extends StatefulWidget {
   final String token;
@@ -290,6 +291,22 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
                     context,
                     MaterialPageRoute(
                       builder: (context) => ScanAnalysisScreen(token: widget.token),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_today, color: kPrimaryColor),
+                title: const Text('Appointments'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AppointmentScreen(
+                        token: widget.token,
+                        email: widget.email,
+                      ),
                     ),
                   );
                 },

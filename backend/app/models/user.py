@@ -12,22 +12,6 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-# Specific to patient registration
-class PatientRegistration(BaseModel):
-    name: str
-    email: EmailStr
-    password: str
-    age: int
-    gender: str  # e.g., "male", "female", "other"
-
-# Specific to doctor registration
-class DoctorRegistration(BaseModel):
-    name: str
-    email: EmailStr
-    password: str
-    specialization: str
-    experience_years: int
-
 class UserBase(BaseModel):
     email: EmailStr
     full_name: str

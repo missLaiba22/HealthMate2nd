@@ -6,8 +6,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:frontend/Screens/Profile/profile_screen.dart';
 import 'package:frontend/Screens/Scan_Analysis/scan_analysis_screen.dart';
-import 'package:frontend/Screens/role_selection/doctor_form.dart';
-import 'package:frontend/Screens/role_selection/patient_form.dart';
 import 'package:frontend/constants.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:frontend/Screens/Appointments/appointment_screen.dart';
@@ -519,22 +517,14 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
               },
             ),
             TextButton(
-              child: const Text('Register as Patient'),
+              child: const Text('Complete Profile'),
               onPressed: () {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const PatientForm()),
-                );
-              },
-            ),
-            TextButton(
-              child: const Text('Register as Doctor'),
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const DoctorForm()),
+                  MaterialPageRoute(
+                    builder: (context) => ProfileScreen(token: widget.token),
+                  ),
                 );
               },
             ),

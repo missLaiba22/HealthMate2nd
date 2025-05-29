@@ -3,8 +3,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../role_selection/doctor_form.dart';
-import '../../role_selection/patient_form.dart';
 import '../../Conversational_Engine/conversational_screen.dart';
 
 class SignUpForm extends StatefulWidget {

@@ -9,8 +9,6 @@ import '../../../components/already_have_an_account_acheck.dart';
 import '../../../constants.dart';
 import '../../Signup/signup_screen.dart';
 import '../../Conversational_Engine/conversational_screen.dart';
-import '../../role_selection/doctor_form.dart';
-import '../../role_selection/patient_form.dart';
 import '../../Home/home_screen.dart';
 
 class LoginForm extends StatefulWidget {
@@ -51,10 +49,12 @@ class _LoginFormState extends State<LoginForm> {
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         final token = responseData['access_token'];
+        final role = responseData['role'];
 
-        // Store token in SharedPreferences
+        // Store token and role in SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', token);
+        await prefs.setString('role', role);
 
         // Show success message
         if (context.mounted) {
@@ -102,49 +102,6 @@ class _LoginFormState extends State<LoginForm> {
         isLoading = false;
       });
     }
-  }
-
-  Future<void> showCompleteProfileDialog() async {
-    return showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Complete Your Profile'),
-          content: const Text(
-            'Would you like to complete your profile now? You can also do this later.',
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Later'),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-            TextButton(
-              child: const Text('Register as Patient'),
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PatientForm()),
-                );
-              },
-            ),
-            TextButton(
-              child: const Text('Register as Doctor'),
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const DoctorForm()),
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -259,39 +216,29 @@ class _LoginFormState extends State<LoginForm> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 45,
-            child: ElevatedButton(
-              onPressed: isLoading ? null : loginUser,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kPrimaryColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: isLoading ? null : loginUser,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kPrimaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Text(
-                      "Login",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
             ),
+            child: isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text("LOGIN"),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           AlreadyHaveAnAccountCheck(
             press: () {
               Navigator.push(
@@ -305,12 +252,5 @@ class _LoginFormState extends State<LoginForm> {
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    emailController.dispose();
-    passwordController.dispose();
-    super.dispose();
   }
 }

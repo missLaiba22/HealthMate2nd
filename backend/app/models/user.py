@@ -19,8 +19,7 @@ class UserBase(BaseModel):
     gender: str
     contact_number: str
     role: str  # 'patient' or 'doctor'
-    share_health_data: Optional[bool] = False
-    receive_notifications: Optional[bool] = False
+    
 
 class PatientProfile(UserBase):
     medical_conditions: Optional[List[str]] = []

@@ -9,7 +9,6 @@ import '../../../components/already_have_an_account_acheck.dart';
 import '../../../constants.dart';
 import '../../Signup/signup_screen.dart';
 import '../../Conversational_Engine/conversational_screen.dart';
-import '../../Home/home_screen.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -32,7 +31,7 @@ class _LoginFormState extends State<LoginForm> {
       isLoading = true;
     });
 
-    final url = Uri.parse('http://192.168.18.60:8000/auth/login');
+    final url = Uri.parse('${ApiConfig.baseUrl}/auth/login');
 
     try {
       final response = await http.post(
@@ -72,6 +71,7 @@ class _LoginFormState extends State<LoginForm> {
               builder: (context) => ConversationalScreen(
                 token: token,
                 email: emailController.text.trim(),
+                userRole: role,
               ),
             ),
           );
@@ -117,7 +117,7 @@ class _LoginFormState extends State<LoginForm> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   spreadRadius: 1,
                   blurRadius: 10,
                   offset: const Offset(0, 1),
@@ -164,7 +164,7 @@ class _LoginFormState extends State<LoginForm> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   spreadRadius: 1,
                   blurRadius: 10,
                   offset: const Offset(0, 1),

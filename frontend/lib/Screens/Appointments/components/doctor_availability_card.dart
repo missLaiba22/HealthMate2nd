@@ -4,10 +4,12 @@ import 'package:frontend/services/appointment_service.dart';
 
 class DoctorAvailabilityCard extends StatefulWidget {
   final Function(String) onDoctorSelected;
+  final String token;
 
   const DoctorAvailabilityCard({
     Key? key,
     required this.onDoctorSelected,
+    required this.token,
   }) : super(key: key);
 
   @override
@@ -33,33 +35,22 @@ class _DoctorAvailabilityCardState extends State<DoctorAvailabilityCard> {
     });
 
     try {
-      // TODO: Replace with actual API call
-      // Simulated data for now
-      await Future.delayed(const Duration(seconds: 1));
+      final appointmentService = AppointmentService(widget.token);
+      final doctorsData = await appointmentService.getAvailableDoctors();
+      
       setState(() {
-        doctors = [
-          {
-            'id': '1',
-            'name': 'Dr. Sarah Johnson',
-            'specialization': 'General Physician',
-            'rating': 4.8,
-            'experience': '10 years',
-          },
-          {
-            'id': '2',
-            'name': 'Dr. Michael Chen',
-            'specialization': 'Cardiologist',
-            'rating': 4.9,
-            'experience': '15 years',
-          },
-          {
-            'id': '3',
-            'name': 'Dr. Emily Brown',
-            'specialization': 'Pediatrician',
-            'rating': 4.7,
-            'experience': '8 years',
-          },
-        ];
+        doctors = doctorsData.map((doctor) {
+          return {
+            'id': doctor['email'], // Use email as ID
+            'name': doctor['full_name'] ?? 'Dr. Unknown',
+            'specialization': doctor['specialization'] ?? 'General Medicine',
+            'rating': 4.5, // Default rating since we don't have this in the database yet
+            'experience': '${doctor['years_of_experience'] ?? 0} years',
+            'email': doctor['email'],
+            'contact_number': doctor['contact_number'] ?? '',
+            'medical_license_number': doctor['medical_license_number'] ?? '',
+          };
+        }).toList();
       });
     } catch (e) {
       setState(() {
@@ -92,8 +83,37 @@ class _DoctorAvailabilityCardState extends State<DoctorAvailabilityCard> {
       );
     }
 
-    return Column(
-      children: doctors.map((doctor) {
+    if (doctors.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_off, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'No doctors available',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Please try again later',
+              style: TextStyle(
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: doctors.length,
+      itemBuilder: (context, index) {
+        final doctor = doctors[index];
         final isSelected = selectedDoctorId == doctor['id'];
         return Card(
           margin: const EdgeInsets.only(bottom: defaultPadding),
@@ -172,7 +192,7 @@ class _DoctorAvailabilityCardState extends State<DoctorAvailabilityCard> {
             ),
           ),
         );
-      }).toList(),
+      },
     );
   }
 } 

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../constants.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../Conversational_Engine/conversational_screen.dart';
 
 class SignUpForm extends StatefulWidget {
   const SignUpForm({super.key});
@@ -29,7 +27,7 @@ class _SignUpFormState extends State<SignUpForm> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.18.60:8000/auth/signup'),
+        Uri.parse('${ApiConfig.baseUrl}/auth/signup'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': _emailController.text.trim(),

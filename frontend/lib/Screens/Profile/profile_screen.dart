@@ -39,7 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void fetchProfile() async {
     final response = await http.get(
-      Uri.parse('http://192.168.18.60:8000/profile/'),
+      Uri.parse('${ApiConfig.baseUrl}/profile'),
       headers: {'Authorization': 'Bearer ${widget.token}'},
     );
     if (response.statusCode == 200) {
@@ -86,7 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     };
 
     final response = await http.put(
-      Uri.parse('http://192.168.18.60:8000/profile/'),
+      Uri.parse('${ApiConfig.baseUrl}/profile'),
       headers: {
         'Authorization': 'Bearer ${widget.token}',
         'Content-Type': 'application/json',

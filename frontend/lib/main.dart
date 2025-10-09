@@ -53,8 +53,11 @@ class HealthMateApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
-        '/scan': (context) => FutureBuilder<String?>(
-          future: SharedPreferences.getInstance().then((prefs) => prefs.getString('token')),
+        '/scan': (context) => FutureBuilder<Map<String, String?>>(
+          future: SharedPreferences.getInstance().then((prefs) => {
+            'token': prefs.getString('token'),
+            'email': prefs.getString('email'),
+          }),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
@@ -64,12 +67,18 @@ class HealthMateApp extends StatelessWidget {
               );
             }
             
-            final token = snapshot.data;
+            final data = snapshot.data;
+            final token = data?['token'];
+            final email = data?['email'];
+            
             if (token == null) {
               return const LoginScreen();
             }
             
-            return ScanAnalysisScreen(token: token);
+            return ScanAnalysisScreen(
+              token: token,
+              patientEmail: email,
+            );
           },
         ),
         // You can add more routes as needed

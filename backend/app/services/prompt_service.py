@@ -2,22 +2,22 @@ from typing import List, Dict
 
 class MedicalPromptEngine:
     def __init__(self):
-        self.system_context = """You are a focused medical assistant AI. Keep responses brief and friendly (1-2 sentences).
+        self.system_context = """You are a medical triage assistant AI focused on voice-activated conversations. Keep responses conversational and brief (1-2 sentences).
 
-Core responsibilities:
-- Medical information and explanations
-- Symptom discussion and assessment
-- General health guidance
-- Wellness and lifestyle advice
-- OTC medication suggestions for mild conditions
+Core Medical Triage Features:
+FE-1: Maintain context in multi-turn conversations for coherent medical discussions
+FE-2: Conduct symptom assessments and provide diagnostic suggestions based on user inputs
+FE-3: Offer lifestyle recommendations (diet, exercise) tailored to symptoms and health insights
+FE-4: Advise users to consult specific medical specialists when symptoms indicate professional medical advice
 
 Remember:
 - Stay within medical/health domain
-- Show empathy while maintaining boundaries
-- Keep responses concise and clear
-- Never diagnose, only suggest possibilities
-- Ask follow-up questions when needed
-- Only suggest OTC medications for mild conditions"""
+- Show empathy while maintaining professional boundaries
+- Keep responses conversational and clear
+- Never diagnose, only suggest possibilities and next steps
+- Ask follow-up questions to maintain context
+- Guide users to appropriate specialists when needed
+- Provide lifestyle advice based on symptoms"""
 
         # Initialize comprehensive health-related keyword sets
         self.symptoms = {
@@ -133,21 +133,25 @@ Remember:
         return False
 
     def create_response_prompt(self, message: str) -> str:
-        """Create appropriate prompt based on message content."""
+        """Create appropriate prompt based on message content for medical triage."""
         if not self.is_health_related(message):
-            return "I'm your medical assistant. How can I help with your health concerns?"
+            return "I'm your medical triage assistant. How can I help with your health concerns today?"
         
-        # For health-related queries, create appropriate specialized prompts
-        if any(keyword in message.lower() for keyword in ['symptom', 'feel', 'pain', 'discomfort']):
-            return f"Briefly assess these symptoms: {message}"
-        elif any(keyword in message.lower() for keyword in ['lifestyle', 'diet', 'exercise']):
-            return f"Give brief lifestyle advice for: {message}"
-        elif any(keyword in message.lower() for keyword in ['specialist', 'doctor', 'consultation']):
-            return f"Briefly guide about medical consultation for: {message}"
-        elif any(keyword in message.lower() for keyword in ['medicine', 'medication', 'drug', 'pill']):
-            return f"Briefly assess medication query: {message}"
+        # FE-2: Symptom assessment and diagnostic suggestions
+        if any(keyword in message.lower() for keyword in ['symptom', 'feel', 'pain', 'discomfort', 'ache']):
+            return f"Conduct a symptom assessment for: {message}. Ask follow-up questions to understand the context better."
         
-        return message
+        # FE-3: Lifestyle recommendations
+        elif any(keyword in message.lower() for keyword in ['lifestyle', 'diet', 'exercise', 'nutrition', 'fitness']):
+            return f"Provide lifestyle recommendations addressing: {message}. Include diet and exercise suggestions."
+        
+        # FE-4: Specialist consultation guidance
+        elif any(keyword in message.lower() for keyword in ['specialist', 'doctor', 'consultation', 'see a doctor']):
+            return f"Guide about medical consultation for: {message}. Suggest appropriate specialists if needed."
+        
+        # General health concerns
+        else:
+            return f"Provide medical triage guidance for: {message}. Assess symptoms and suggest next steps."
 
     def create_symptom_assessment_prompt(self, message: str) -> str:
         """Create a prompt for symptom assessment with follow-up questions."""
@@ -226,6 +230,30 @@ Provide a response that:
             questions.append("Is there any mucus or phlegm?")
         
         return "\n".join(questions)
+
+    def create_context_aware_prompt(self, message: str, conversation_history: List[Dict]) -> str:
+        """FE-1: Create context-aware prompts for multi-turn conversations."""
+        if not conversation_history:
+            return self.create_response_prompt(message)
+        
+        # Build context from conversation history
+        context_summary = self._build_context_summary(conversation_history)
+        
+        # Create context-aware prompt for AI processing
+        return f"""Based on our previous conversation about: {context_summary}
+        
+Current message: {message}
+
+Maintain context and provide coherent medical triage guidance. If this is a follow-up to previous symptoms, reference them appropriately."""
+
+    def _build_context_summary(self, conversation_history: List[Dict]) -> str:
+        """Build a summary of conversation context."""
+        recent_topics = []
+        for msg in conversation_history[-3:]:  # Last 3 messages for context
+            if msg.get('role') == 'user':
+                recent_topics.append(msg.get('content', ''))
+        
+        return " | ".join(recent_topics) if recent_topics else "No previous context"
 
     def add_medical_disclaimer(self, response: str) -> str:
         """Add medical disclaimer only for responses containing specific medical advice."""

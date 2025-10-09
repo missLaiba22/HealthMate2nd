@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/constants.dart';
+import 'package:frontend/services/appointment_service.dart';
 
 class TimeSlotSelector extends StatefulWidget {
   final DateTime selectedDate;
   final String? doctorId;
+  final String token;
   final Function(String) onTimeSlotSelected;
 
   const TimeSlotSelector({
     Key? key,
     required this.selectedDate,
     required this.doctorId,
+    required this.token,
     required this.onTimeSlotSelected,
   }) : super(key: key);
 
@@ -47,18 +50,13 @@ class _TimeSlotSelectorState extends State<TimeSlotSelector> {
     });
 
     try {
-      // TODO: Replace with actual API call
-      // Simulated data for now
-      await Future.delayed(const Duration(seconds: 1));
+      final appointmentService = AppointmentService(widget.token);
+      // final dateStr = widget.selectedDate.toIso8601String().split('T')[0]; // YYYY-MM-DD format
+      
+      final response = await appointmentService.getAvailableTimeSlots(widget.doctorId!, widget.selectedDate);
+      
       setState(() {
-        timeSlots = [
-          '09:00 AM',
-          '10:00 AM',
-          '11:00 AM',
-          '02:00 PM',
-          '03:00 PM',
-          '04:00 PM',
-        ];
+        timeSlots = response;
       });
     } catch (e) {
       setState(() {
@@ -91,6 +89,39 @@ class _TimeSlotSelectorState extends State<TimeSlotSelector> {
             ElevatedButton(
               onPressed: _loadTimeSlots,
               child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (timeSlots.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.schedule, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text(
+              'No available time slots',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'The doctor has not set availability for ${widget.selectedDate.toString().split(' ')[0]}',
+              style: const TextStyle(
+                color: Colors.grey,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadTimeSlots,
+              child: const Text('Refresh'),
             ),
           ],
         ),

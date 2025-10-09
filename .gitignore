@@ -32,6 +32,145 @@ migrate_working_dir/
 .vscode/
 
 # ====================
+# Machine Learning / AI Models
+# ====================
+# Large model files
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.joblib
+*.model
+*.weights
+*.bin
+*.safetensors
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# TensorFlow/PyTorch cache
+.tensorflow/
+.pytorch/
+.cache/
+
+# ====================
+# Large Binary Files
+# ====================
+# DLL files (Windows)
+*.dll
+*.lib
+*.exe
+
+# APK files (Android)
+*.apk
+*.aab
+
+# Large data files
+*.csv
+*.json
+*.xml
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Media files
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.flv
+*.webm
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+
+# Image files (if large)
+*.tiff
+*.tif
+*.bmp
+*.raw
+
+# ====================
+# Build Artifacts
+# ====================
+# Flutter build outputs
+build/
+**/build/
+**/android/app/build/
+**/ios/build/
+**/web/build/
+**/windows/build/
+**/linux/build/
+**/macos/build/
+
+# Android specific
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/android/.gradle/
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/key.properties
+**/android/app/upload-keystore.jks
+
+# iOS specific
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# ====================
+# Dependencies & Packages
+# ====================
+# Python virtual environments
+**/venv/
+**/env/
+**/.venv/
+**/.env/
+**/ENV/
+**/env.bak/
+**/venv.bak/
+
+# Node modules (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ====================
+# IDE & Editor Files
+# ====================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ====================
+# OS Generated Files
+# ====================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ====================
 # Flutter / Dart
 # ====================
 **/doc/api/

@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:frontend/responsive.dart';
 import 'package:frontend/constants.dart';
 import 'components/login_signup_btn.dart';
 import 'components/social_signup.dart';
-import '../Login/login_screen.dart';
-import '../Signup/signup_screen.dart';
-import 'components/welcome_image.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});

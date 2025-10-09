@@ -1,10 +1,8 @@
 from typing import List, Dict
 from datetime import datetime
-from app.database import db
+from ..database import db
 import logging
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class ConversationHistory:
@@ -97,4 +95,4 @@ try:
     db.conversations.create_index([("email", 1)])
     logger.info("Successfully created index on email field in conversations collection")
 except Exception as e:
-    logger.error(f"Error creating index: {str(e)}") 
+    logger.error(f"Error creating index: {str(e)}")

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/constants.dart';
-import 'package:frontend/Screens/Appointments/components/appointment_card.dart';
 import 'package:frontend/Screens/Appointments/components/doctor_availability_card.dart';
 import 'package:frontend/Screens/Appointments/components/time_slot_selector.dart';
 import 'package:frontend/services/appointment_service.dart';
@@ -96,6 +95,7 @@ class _AppointmentScreenState extends State<AppointmentScreen> with SingleTicker
                           const SizedBox(height: defaultPadding),
                           Expanded(
                             child: DoctorAvailabilityCard(
+                              token: widget.token,
                               onDoctorSelected: (doctor) {
                                 setState(() {
                                   selectedDoctor = doctor;
@@ -155,6 +155,7 @@ class _AppointmentScreenState extends State<AppointmentScreen> with SingleTicker
                             child: TimeSlotSelector(
                               selectedDate: selectedDate,
                               doctorId: selectedDoctor,
+                              token: widget.token,
                               onTimeSlotSelected: (timeSlot) {
                                 setState(() {
                                   selectedTimeSlot = timeSlot;

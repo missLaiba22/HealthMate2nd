@@ -6,5 +6,9 @@ const kPrimaryLightColor = Color(0xFFE3F2FD);
 const double defaultPadding = 16.0;
 
 class ApiConfig {
-  static const String baseUrl = 'http://192.168.18.60:8000';
+  // Override at run time with: --dart-define=BASE_URL=http://<ip>:8000
+  static const String baseUrl = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'http://192.168.137.221:8000',
+  );
 }

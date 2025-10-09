@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
@@ -9,12 +8,21 @@ import 'package:frontend/Screens/Scan_Analysis/scan_analysis_screen.dart';
 import 'package:frontend/constants.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:frontend/Screens/Appointments/appointment_screen.dart';
+import 'package:frontend/Screens/Appointments/doctor_availability_screen.dart';
+import 'package:frontend/Screens/Appointments/my_appointments_screen.dart';
+// Removed complex appointment imports - keeping conversational engine simple
 
 class ConversationalScreen extends StatefulWidget {
   final String token;
   final String email;
+  final String userRole; // Add user role parameter
 
-  const ConversationalScreen({super.key, required this.token, required this.email});
+  const ConversationalScreen({
+    super.key, 
+    required this.token, 
+    required this.email,
+    required this.userRole,
+  });
 
   @override
   State<ConversationalScreen> createState() => _ConversationalScreenState();
@@ -120,8 +128,13 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
     try {
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.18.60:8000/speech/transcribe'),
+        Uri.parse('${ApiConfig.baseUrl}/speech/transcribe'),
       );
+
+      // Add Authorization header
+      request.headers.addAll({
+        'Authorization': 'Bearer ${widget.token}',
+      });
 
       request.files.add(
         await http.MultipartFile.fromPath(
@@ -132,32 +145,66 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
 
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
+      print('Speech transcription response status: ${response.statusCode}');
+      print('Speech transcription response body: $responseBody');
       final data = json.decode(responseBody);
+      print('Parsed speech data: $data');
 
-      setState(() {
-        _transcribedText = data['text'];
-        _isProcessing = false;
-      });
+      if (response.statusCode == 200 && data['transcription'] != null) {
+        // Handle the response more safely - check for nested structure
+        String transcribedText;
+        if (data['transcription'] is String) {
+          transcribedText = data['transcription'];
+        } else if (data['transcription'] is Map && data['transcription']['text'] != null) {
+          // Handle nested structure: {transcription: {text: "message"}}
+          transcribedText = data['transcription']['text'].toString();
+        } else {
+          transcribedText = data['transcription'].toString();
+        }
+        
+        if (mounted) {
+          setState(() {
+            _transcribedText = transcribedText;
+            _isProcessing = false;
+          });
 
-      if (_transcribedText.isNotEmpty) {
-        await _getAIResponse(_transcribedText);
+          if (_transcribedText.isNotEmpty) {
+            await _getAIResponse(_transcribedText);
+          }
+        }
+      } else {
+        print('Speech transcription failed with status: ${response.statusCode}');
+        print('Response body: $responseBody');
+        if (mounted) {
+          setState(() {
+            _transcribedText = 'Audio processing failed. Please try recording again.';
+            _isProcessing = false;
+          });
+        }
       }
     } catch (e) {
       print('Error transcribing audio: $e');
-      setState(() {
-        _isProcessing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
     }
   }
 
   Future<void> _getAIResponse(String message) async {
+    print('Getting AI response for message: $message');
     setState(() {
       _isProcessing = true;
     });
 
     try {
+      print('Sending chat request to: ${ApiConfig.baseUrl}/chat');
+      print('Message: $message');
+      print('Token: ${widget.token.substring(0, 20)}...');
+      
       final response = await http.post(
-        Uri.parse('http://192.168.18.60:8000/chat'),
+        Uri.parse('${ApiConfig.baseUrl}/chat'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${widget.token}',
@@ -167,13 +214,18 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
         }),
       );
 
+      print('Chat response status: ${response.statusCode}');
+      print('Chat response body: ${response.body}');
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        print('Parsed response data: $data');
         setState(() {
           _currentResponse = data['response'];
         });
         await _speakResponse(data['response']);
       } else {
+        print('Chat API error: ${response.statusCode} - ${response.body}');
         setState(() {
           _currentResponse = 'Sorry, I encountered an error. Please try again.';
         });
@@ -189,6 +241,8 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
       });
     }
   }
+
+  // Removed complex appointment booking - keeping conversational engine simple
 
   Future<void> _speakResponse(String text) async {
     if (text.isNotEmpty) {
@@ -288,27 +342,62 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ScanAnalysisScreen(token: widget.token),
+                      builder: (context) => ScanAnalysisScreen(
+                        token: widget.token,
+                        patientEmail: widget.email,
+                      ),
                     ),
                   );
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.calendar_today, color: kPrimaryColor),
-                title: const Text('Appointments'),
+                title: Text(widget.userRole == 'doctor' ? 'My Appointments' : 'Book Appointment'),
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AppointmentScreen(
-                        token: widget.token,
-                        email: widget.email,
+                  if (widget.userRole == 'doctor') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MyAppointmentsScreen(
+                          token: widget.token,
+                          email: widget.email,
+                          userRole: widget.userRole,
+                        ),
                       ),
-                    ),
-                  );
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AppointmentScreen(
+                          token: widget.token,
+                          email: widget.email,
+                        ),
+                      ),
+                    );
+                  }
                 },
               ),
+              // Only show "Set Availability" for doctors
+              if (widget.userRole == 'doctor')
+                ListTile(
+                  leading: const Icon(Icons.schedule, color: kPrimaryColor),
+                  title: const Text('Set Availability'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DoctorAvailabilityScreen(
+                          token: widget.token,
+                          email: widget.email,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              // Removed complex triage appointment - keeping conversational engine simple
               ListTile(
                 leading: const Icon(Icons.person, color: kPrimaryColor),
                 title: const Text('Profile Management'),

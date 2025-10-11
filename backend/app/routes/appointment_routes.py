@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from typing import List
 from datetime import date
 from ..models.appointment import (
@@ -14,11 +14,66 @@ router = APIRouter(tags=["Appointments"])
 
 @router.post("/create", response_model=AppointmentResponse)
 async def create_appointment(
-    appointment_data: AppointmentCreate,
+    request: Request,
     current_user=Depends(get_current_user)
 ):
     """Create a new appointment"""
     try:
+        # Get raw request body for debugging
+        body = await request.body()
+        logger.info(f"Raw request body: {body}")
+        
+        # Parse JSON manually to see what's being sent
+        import json
+        try:
+            request_data = json.loads(body)
+            logger.info(f"Parsed request data: {request_data}")
+        except Exception as e:
+            logger.error(f"Error parsing JSON: {e}")
+            raise HTTPException(status_code=400, detail="Invalid JSON")
+        
+        # Create AppointmentCreate object manually
+        from ..models.appointment import AppointmentCreate
+        from datetime import date, time
+        
+        # Handle time conversion
+        appointment_time = request_data.get('appointment_time', '')
+        if isinstance(appointment_time, str):
+            try:
+                time_parts = appointment_time.split(':')
+                if len(time_parts) >= 2:
+                    hour = int(time_parts[0])
+                    minute = int(time_parts[1])
+                    appointment_time = time(hour, minute)
+                else:
+                    appointment_time = time.fromisoformat(appointment_time)
+            except Exception as e:
+                logger.error(f"Error parsing time: {appointment_time}, error: {e}")
+                raise HTTPException(status_code=400, detail=f"Invalid time format: {appointment_time}")
+        
+        # Handle date conversion
+        appointment_date = request_data.get('appointment_date', '')
+        if isinstance(appointment_date, str):
+            try:
+                appointment_date = date.fromisoformat(appointment_date)
+            except Exception as e:
+                logger.error(f"Error parsing date: {appointment_date}, error: {e}")
+                raise HTTPException(status_code=400, detail=f"Invalid date format: {appointment_date}")
+        
+        # Create appointment data object
+        appointment_data = AppointmentCreate(
+            patient_email=request_data.get('patient_email', '') or current_user['email'],
+            doctor_email=request_data.get('doctor_email', ''),
+            appointment_date=appointment_date,
+            appointment_time=appointment_time,
+            duration_minutes=request_data.get('duration_minutes', 30),
+            appointment_type=request_data.get('appointment_type', 'consultation'),
+            notes=request_data.get('notes', '')
+        )
+        
+        logger.info(f"Creating appointment for user: {current_user.get('email')}")
+        logger.info(f"Appointment data: {appointment_data}")
+        
         # Ensure the request is from the patient themselves or a doctor
         if current_user['role'] not in ['patient', 'doctor']:
             raise HTTPException(status_code=403, detail="Access denied")
@@ -27,13 +82,15 @@ async def create_appointment(
         if current_user['role'] == 'patient' and appointment_data.patient_email != current_user['email']:
             raise HTTPException(status_code=403, detail="Patients can only create appointments for themselves")
         
-        return await AppointmentService.create_appointment(appointment_data)
+        appointment_service = AppointmentService()
+        return await appointment_service.create_appointment(appointment_data)
         
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error creating appointment: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Appointment data received: {appointment_data}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @router.get("/patient/{patient_email}", response_model=List[AppointmentResponse])
 async def get_patient_appointments(
@@ -46,7 +103,8 @@ async def get_patient_appointments(
         if current_user['role'] == 'patient' and patient_email != current_user['email']:
             raise HTTPException(status_code=403, detail="Access denied")
         
-        return await AppointmentService.get_patient_appointments(patient_email)
+        appointment_service = AppointmentService()
+        return await appointment_service.get_patient_appointments(patient_email)
         
     except HTTPException:
         raise
@@ -65,7 +123,8 @@ async def get_doctor_appointments(
         if current_user['role'] == 'doctor' and doctor_email != current_user['email']:
             raise HTTPException(status_code=403, detail="Access denied")
         
-        return await AppointmentService.get_doctor_appointments(doctor_email)
+        appointment_service = AppointmentService()
+        return await appointment_service.get_doctor_appointments(doctor_email)
         
     except HTTPException:
         raise
@@ -82,7 +141,8 @@ async def get_available_slots(
 ):
     """Get available appointment slots for a doctor"""
     try:
-        return await AppointmentService.get_available_slots(doctor_email, start_date, end_date)
+        appointment_service = AppointmentService()
+        return await appointment_service.get_available_slots(doctor_email, start_date, end_date)
         
     except Exception as e:
         logger.error(f"Error fetching available slots: {str(e)}")
@@ -96,7 +156,8 @@ async def update_appointment(
 ):
     """Update an appointment"""
     try:
-        return await AppointmentService.update_appointment(appointment_id, update_data)
+        appointment_service = AppointmentService()
+        return await appointment_service.update_appointment(appointment_id, update_data)
         
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -111,7 +172,8 @@ async def cancel_appointment(
 ):
     """Cancel an appointment"""
     try:
-        success = await AppointmentService.cancel_appointment(appointment_id)
+        appointment_service = AppointmentService()
+        success = await appointment_service.cancel_appointment(appointment_id)
         if not success:
             raise HTTPException(status_code=404, detail="Appointment not found")
         
@@ -138,7 +200,8 @@ async def set_doctor_availability(
         if availability_data.doctor_email != current_user['email']:
             raise HTTPException(status_code=403, detail="Can only set your own availability")
         
-        availability_id = await AppointmentService.set_doctor_availability(availability_data)
+        appointment_service = AppointmentService()
+        availability_id = await appointment_service.set_doctor_availability(availability_data)
         return {"message": "Availability set successfully", "availability_id": availability_id}
         
     except HTTPException:
@@ -151,7 +214,8 @@ async def set_doctor_availability(
 async def get_doctors(current_user=Depends(get_current_user)):
     """Get all doctors"""
     try:
-        return await AppointmentService.get_doctors()
+        appointment_service = AppointmentService()
+        return await appointment_service.get_doctors()
         
     except Exception as e:
         logger.error(f"Error fetching doctors: {str(e)}")
@@ -164,10 +228,11 @@ async def get_my_appointments(current_user=Depends(get_current_user)):
         email = current_user["email"]
         role = current_user["role"]
         
+        appointment_service = AppointmentService()
         if role == "patient":
-            return await AppointmentService.get_patient_appointments(email)
+            return await appointment_service.get_patient_appointments(email)
         elif role == "doctor":
-            return await AppointmentService.get_doctor_appointments(email)
+            return await appointment_service.get_doctor_appointments(email)
         else:
             raise HTTPException(status_code=403, detail="Access denied")
         
@@ -204,18 +269,26 @@ async def get_time_slots(
         from datetime import datetime
         appointment_date = datetime.strptime(date, "%Y-%m-%d").date()
         
+        logger.info(f"Getting time slots for doctor: {doctor_email}, date: {appointment_date}")
+        
         # Get available slots for the date
-        slots = await AppointmentService.get_available_slots(doctor_email, appointment_date, appointment_date)
+        appointment_service = AppointmentService()
+        slots = await appointment_service.get_available_slots(doctor_email, appointment_date, appointment_date)
+        
+        logger.info(f"Found {len(slots)} slots for doctor: {doctor_email}")
         
         # Convert slots to time strings
         time_slots = []
         for slot in slots:
             if slot.is_available:
                 time_slots.append(slot.time.strftime("%H:%M"))
+                logger.info(f"Available slot: {slot.time.strftime('%H:%M')}")
         
+        logger.info(f"Returning {len(time_slots)} available time slots")
         return {"time_slots": time_slots}
         
     except ValueError as e:
+        logger.error(f"Invalid date format: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Invalid date format: {str(e)}")
     except Exception as e:
         logger.error(f"Error fetching time slots: {str(e)}")

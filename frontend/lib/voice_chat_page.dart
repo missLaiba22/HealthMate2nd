@@ -93,7 +93,7 @@
 
 //     try {
 //       _webSocketChannel = IOWebSocketChannel.connect(
-//         Uri.parse('ws://192.168.137.221:8000/ws/voice-chat'),
+//         Uri.parse('ws://192.168.18.60:8000/ws/voice-chat'),
 //         pingInterval: const Duration(seconds: 10),
 //       );
 //       _logger.info('WebSocket connected');

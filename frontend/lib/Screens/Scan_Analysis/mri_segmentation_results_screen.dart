@@ -71,37 +71,65 @@ class _MRISegmentationResultsScreenState extends State<MRISegmentationResultsScr
   }
 
   Map<String, double> _calculateVolumes() {
-    // Simulate volume calculations based on segmentation
-    // In real implementation, this would use the actual segmentation mask
+    // Use actual segmentation data from backend
+    final classStats = widget.segmentationData['class_statistics'] as Map<String, dynamic>? ?? {};
+    final totalPixels = widget.segmentationData['total_pixels'] as int? ?? 0;
+    
+    // Calculate volumes based on pixel counts (assuming 1mm³ per pixel for MRI)
+    // This is a simplified calculation - in reality, you'd need proper voxel spacing
+    final pixelToVolumeRatio = 1.0; // 1mm³ per pixel (simplified)
+    
+    final backgroundPixels = classStats['background']?['pixels'] as int? ?? 0;
+    final necroticPixels = classStats['necrotic_core']?['pixels'] as int? ?? 0;
+    final edemaPixels = classStats['edema']?['pixels'] as int? ?? 0;
+    final enhancingPixels = classStats['enhancing_tumor']?['pixels'] as int? ?? 0;
+    
+    // Calculate volumes in mm³ (convert to cm³ by dividing by 1000)
+    final totalBrainVolume = (totalPixels * pixelToVolumeRatio) / 1000.0; // cm³
+    final necroticVolume = (necroticPixels * pixelToVolumeRatio) / 1000.0; // cm³
+    final edemaVolume = (edemaPixels * pixelToVolumeRatio) / 1000.0; // cm³
+    final enhancingVolume = (enhancingPixels * pixelToVolumeRatio) / 1000.0; // cm³
+    final totalTumorVolume = necroticVolume + enhancingVolume; // Total tumor volume
+    
     return {
-      'total_brain_volume': 1450.5, // cm³
-      'tumor_volume': 12.3, // cm³
-      'edema_volume': 45.7, // cm³
-      'enhancing_volume': 8.9, // cm³
-      'necrotic_volume': 3.4, // cm³
+      'total_brain_volume': totalBrainVolume,
+      'tumor_volume': totalTumorVolume,
+      'edema_volume': edemaVolume,
+      'enhancing_volume': enhancingVolume,
+      'necrotic_volume': necroticVolume,
     };
   }
 
   List<String> _generateInsights(Map<String, double> volumes) {
     final insights = <String>[];
     
-    if (volumes['tumor_volume']! > 10.0) {
-      insights.add('Large tumor mass detected (>10 cm³)');
-    } else if (volumes['tumor_volume']! > 5.0) {
-      insights.add('Moderate tumor size detected (5-10 cm³)');
+    // Report only actual measurements from segmentation
+    if (volumes['tumor_volume']! > 0.0) {
+      insights.add('Tumor volume: ${volumes['tumor_volume']!.toStringAsFixed(2)} cm³');
     } else {
-      insights.add('Small tumor mass detected (<5 cm³)');
+      insights.add('No tumor detected in the segmentation');
     }
     
-    if (volumes['edema_volume']! > 30.0) {
-      insights.add('Significant peritumoral edema present');
+    // Report edema measurements
+    if (volumes['edema_volume']! > 0.0) {
+      insights.add('Peritumoral edema volume: ${volumes['edema_volume']!.toStringAsFixed(2)} cm³');
+    } else {
+      insights.add('No peritumoral edema detected');
     }
     
-    if (volumes['enhancing_volume']! > volumes['necrotic_volume']!) {
-      insights.add('Active enhancing regions identified');
+    // Report tumor composition (actual measurements only)
+    if (volumes['enhancing_volume']! > 0.0) {
+      insights.add('Enhancing tumor volume: ${volumes['enhancing_volume']!.toStringAsFixed(2)} cm³');
+    }
+    if (volumes['necrotic_volume']! > 0.0) {
+      insights.add('Necrotic core volume: ${volumes['necrotic_volume']!.toStringAsFixed(2)} cm³');
     }
     
-    insights.add('Tumor occupies ${(volumes['tumor_volume']! / volumes['total_brain_volume']! * 100).toStringAsFixed(1)}% of total brain volume');
+    // Report percentage of brain volume (calculated from actual data)
+    if (volumes['tumor_volume']! > 0.0 && volumes['total_brain_volume']! > 0.0) {
+      final percentage = (volumes['tumor_volume']! / volumes['total_brain_volume']! * 100);
+      insights.add('Tumor occupies ${percentage.toStringAsFixed(1)}% of total brain volume');
+    }
     
     return insights;
   }
@@ -112,15 +140,12 @@ class _MRISegmentationResultsScreenState extends State<MRISegmentationResultsScr
     recommendations.add('Consult with neurosurgeon for treatment planning');
     recommendations.add('Consider follow-up MRI in 4-6 weeks');
     
-    if (insights.any((insight) => insight.contains('Large tumor'))) {
-      recommendations.add('Urgent neurosurgical evaluation recommended');
-    }
-    
     if (insights.any((insight) => insight.contains('edema'))) {
       recommendations.add('Consider steroid therapy for edema management');
     }
     
     recommendations.add('Monitor for neurological symptoms');
+    recommendations.add('Review with radiologist for detailed analysis');
     
     return recommendations;
   }

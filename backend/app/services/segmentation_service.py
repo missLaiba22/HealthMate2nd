@@ -110,6 +110,154 @@ class SegmentationService:
         preds = self._model.predict(batched)
         return preds
 
+    async def segment_image(self, image_data: str) -> dict:
+        """
+        High-level method for single image segmentation.
+        This method handles the complete workflow from base64 image to segmentation result.
+        """
+        try:
+            import base64
+            from PIL import Image
+            import io
+            
+            # Decode base64 image
+            image_bytes = base64.b64decode(image_data)
+            image = Image.open(io.BytesIO(image_bytes))
+            
+            # Convert to numpy array
+            if image.mode != 'L':
+                image = image.convert('L')
+            image_array = np.array(image, dtype=np.float32)
+            
+            # Normalize if needed
+            if image_array.max() > 1.0:
+                image_array = image_array / 255.0
+            
+            # Get segmentation prediction
+            prediction = self.predict_mask(image_array)
+            
+            # Process prediction to get binary mask
+            if prediction.ndim == 4:  # (batch, height, width, channels)
+                mask = prediction[0]  # Remove batch dimension
+            else:
+                mask = prediction
+            
+            # Convert to binary mask (threshold at 0.5)
+            binary_mask = (mask > 0.5).astype(np.uint8)
+            
+            # Calculate statistics
+            total_pixels = binary_mask.size
+            segmented_pixels = np.sum(binary_mask)
+            segmentation_percentage = (segmented_pixels / total_pixels) * 100
+            
+            # Convert mask back to base64 for response
+            mask_image = Image.fromarray((binary_mask * 255).astype(np.uint8))
+            buffer = io.BytesIO()
+            mask_image.save(buffer, format='PNG')
+            mask_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+            
+            return {
+                "success": True,
+                "segmentation_mask": mask_base64,
+                "statistics": {
+                    "total_pixels": int(total_pixels),
+                    "segmented_pixels": int(segmented_pixels),
+                    "segmentation_percentage": float(segmentation_percentage)
+                },
+                "message": "Image segmentation completed successfully"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in image segmentation: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Failed to segment image"
+            }
+
+    async def segment_dual_modality(self, flair_image: str, t1ce_image: str) -> dict:
+        """
+        High-level method for dual modality brain segmentation.
+        This method handles the complete workflow from base64 images to segmentation result.
+        """
+        try:
+            import base64
+            from PIL import Image
+            import io
+            
+            # Decode FLAIR image
+            flair_bytes = base64.b64decode(flair_image)
+            flair_pil = Image.open(io.BytesIO(flair_bytes))
+            if flair_pil.mode != 'L':
+                flair_pil = flair_pil.convert('L')
+            flair_array = np.array(flair_pil, dtype=np.float32)
+            if flair_array.max() > 1.0:
+                flair_array = flair_array / 255.0
+            
+            # Decode T1CE image
+            t1ce_bytes = base64.b64decode(t1ce_image)
+            t1ce_pil = Image.open(io.BytesIO(t1ce_bytes))
+            if t1ce_pil.mode != 'L':
+                t1ce_pil = t1ce_pil.convert('L')
+            t1ce_array = np.array(t1ce_pil, dtype=np.float32)
+            if t1ce_array.max() > 1.0:
+                t1ce_array = t1ce_array / 255.0
+            
+            # Get segmentation prediction
+            prediction = self.predict_from_modalities(flair_array, t1ce_array)
+            
+            # Process prediction (assuming 4-class segmentation: background, necrotic core, edema, enhancing tumor)
+            if prediction.ndim == 4:  # (batch, height, width, classes)
+                pred = prediction[0]  # Remove batch dimension
+            else:
+                pred = prediction
+            
+            # Get class predictions
+            class_predictions = np.argmax(pred, axis=-1)
+            
+            # Calculate statistics for each class
+            total_pixels = class_predictions.size
+            class_stats = {}
+            class_names = ['Background', 'Necrotic Core', 'Edema', 'Enhancing Tumor']
+            
+            for i, class_name in enumerate(class_names):
+                class_pixels = int(np.sum(class_predictions == i))  # Convert to Python int
+                percentage = float((class_pixels / total_pixels) * 100)  # Convert to Python float
+                class_stats[class_name.lower().replace(' ', '_')] = {
+                    "pixels": class_pixels,
+                    "percentage": percentage
+                }
+            
+            # Convert prediction to RGB visualization
+            colors = np.array([
+                [0, 0, 0],        # Background - Black
+                [255, 0, 0],      # Necrotic Core - Red
+                [0, 255, 0],      # Edema - Green
+                [0, 0, 255]       # Enhancing Tumor - Blue
+            ])
+            
+            rgb_prediction = colors[class_predictions]
+            pred_image = Image.fromarray(rgb_prediction.astype(np.uint8))
+            buffer = io.BytesIO()
+            pred_image.save(buffer, format='PNG')
+            pred_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+            
+            return {
+                "success": True,
+                "segmentation_result": pred_base64,
+                "class_statistics": class_stats,
+                "total_pixels": int(total_pixels),
+                "message": "Dual modality brain segmentation completed successfully"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in dual modality segmentation: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Failed to segment dual modality brain scan"
+            }
+
 
 # Singleton instance for reuse
 segmentation_service = SegmentationService()

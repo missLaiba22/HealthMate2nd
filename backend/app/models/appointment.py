@@ -1,23 +1,35 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional, List, Dict
+from typing import List, Dict, Optional
 from datetime import datetime, date, time
+from pydantic import BaseModel, EmailStr
 from enum import Enum
-from ..database import db
-import logging
 import uuid
+import logging
 
 logger = logging.getLogger(__name__)
 
 class AppointmentStatus(str, Enum):
-    SCHEDULED = "scheduled"
-    CONFIRMED = "confirmed"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
-    NO_SHOW = "no_show"
-
-class AppointmentType(str, Enum):
-    CONSULTATION = "consultation"
-    FOLLOW_UP = "follow_up"
+    SCHEDULED = "SCHEDULED"
+    CONFIRMED = "CONFIRMED"
+    CANCELLED = "CANCELLED"
+    COMPLETED = "COMPLETED"
+    NO_SHOW = "NO_SHOW"
+    
+    @classmethod
+    def from_string(cls, status_str: str):
+        """Convert string status to enum, handling case variations"""
+        status_mapping = {
+            'scheduled': cls.SCHEDULED,
+            'SCHEDULED': cls.SCHEDULED,
+            'confirmed': cls.CONFIRMED,
+            'CONFIRMED': cls.CONFIRMED,
+            'cancelled': cls.CANCELLED,
+            'CANCELLED': cls.CANCELLED,
+            'completed': cls.COMPLETED,
+            'COMPLETED': cls.COMPLETED,
+            'no_show': cls.NO_SHOW,
+            'NO_SHOW': cls.NO_SHOW,
+        }
+        return status_mapping.get(status_str, cls.SCHEDULED)
 
 class AppointmentBase(BaseModel):
     patient_email: EmailStr
@@ -25,7 +37,7 @@ class AppointmentBase(BaseModel):
     appointment_date: date
     appointment_time: time
     duration_minutes: int = 30
-    appointment_type: AppointmentType = AppointmentType.CONSULTATION
+    appointment_type: str = "consultation"
     notes: Optional[str] = None
 
 class AppointmentCreate(AppointmentBase):
@@ -35,8 +47,9 @@ class AppointmentUpdate(BaseModel):
     appointment_date: Optional[date] = None
     appointment_time: Optional[time] = None
     duration_minutes: Optional[int] = None
-    status: Optional[AppointmentStatus] = None
+    appointment_type: Optional[str] = None
     notes: Optional[str] = None
+    status: Optional[AppointmentStatus] = None
 
 class AppointmentResponse(AppointmentBase):
     id: str
@@ -61,8 +74,7 @@ class AppointmentReminder(BaseModel):
     doctor_email: EmailStr
     appointment_date: date
     appointment_time: time
-    reminder_type: str  # "confirmation", "reminder_24h", "reminder_1h"
-    message: str
+    reminder_sent: bool = False
     sent_at: Optional[datetime] = None
 
 class DoctorAvailabilityRequest(BaseModel):
@@ -76,168 +88,66 @@ class DoctorAvailabilityRequest(BaseModel):
     class Config:
         # Allow string input for time fields and convert them
         json_encoders = {
-            time: lambda v: v.isoformat() if v else None
+            time: lambda v: v.isoformat()
         }
 
 class AppointmentModel:
-    """Database operations for Appointment model"""
+    """Pure data model for appointments - no business logic"""
     
     @staticmethod
-    def create_appointment(appointment_data: AppointmentCreate) -> str:
-        """Create a new appointment"""
-        try:
-            # Convert time object to string for MongoDB storage
-            appointment_time = appointment_data.appointment_time
-            if hasattr(appointment_time, 'isoformat'):
-                appointment_time_str = appointment_time.isoformat()
-            else:
-                appointment_time_str = str(appointment_time)
-            
-            appointment_doc = {
-                "id": str(uuid.uuid4()),
-                "patient_email": appointment_data.patient_email,
-                "doctor_email": appointment_data.doctor_email,
-                "appointment_date": appointment_data.appointment_date,
-                "appointment_time": appointment_time_str,
-                "duration_minutes": appointment_data.duration_minutes,
-                "appointment_type": appointment_data.appointment_type,
-                "notes": appointment_data.notes,
-                "status": AppointmentStatus.SCHEDULED,
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow()
-            }
-            result = db.appointments.insert_one(appointment_doc)
-            return appointment_doc["id"]
-        except Exception as e:
-            logger.error(f"Error creating appointment: {str(e)}")
-            raise
+    def to_dict(appointment_data: AppointmentCreate) -> Dict:
+        """Convert appointment data to dictionary for MongoDB storage"""
+        appointment_time = appointment_data.appointment_time
+        appointment_time_str = appointment_time.isoformat() if hasattr(appointment_time, 'isoformat') else str(appointment_time)
+        
+        return {
+            "id": str(uuid.uuid4()),
+            "patient_email": appointment_data.patient_email,
+            "doctor_email": appointment_data.doctor_email,
+            "appointment_date": appointment_data.appointment_date,
+            "appointment_time": appointment_time_str,
+            "duration_minutes": appointment_data.duration_minutes,
+            "appointment_type": appointment_data.appointment_type,
+            "notes": appointment_data.notes,
+            "status": AppointmentStatus.SCHEDULED,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
 
     @staticmethod
-    def get_appointment_by_id(appointment_id: str) -> Optional[Dict]:
-        """Get appointment by ID"""
+    def from_dict(data: Dict) -> Optional[AppointmentResponse]:
+        """Convert MongoDB document to AppointmentResponse"""
         try:
-            return db.appointments.find_one({"id": appointment_id})
+            # Handle status conversion
+            status_str = data.get("status", "SCHEDULED")
+            status = AppointmentStatus.from_string(status_str)
+            
+            return AppointmentResponse(
+                id=data.get("id"),
+                patient_email=data.get("patient_email"),
+                doctor_email=data.get("doctor_email"),
+                appointment_date=data.get("appointment_date"),
+                appointment_time=data.get("appointment_time"),
+                duration_minutes=data.get("duration_minutes"),
+                appointment_type=data.get("appointment_type"),
+                notes=data.get("notes"),
+                status=status,
+                created_at=data.get("created_at"),
+                updated_at=data.get("updated_at")
+            )
         except Exception as e:
-            logger.error(f"Error fetching appointment: {str(e)}")
+            logger.error(f"Error converting appointment data: {str(e)}")
             return None
 
     @staticmethod
-    def get_patient_appointments(patient_email: str) -> List[Dict]:
-        """Get all appointments for a patient"""
-        try:
-            appointments = list(db.appointments.find(
-                {"patient_email": patient_email},
-                {"_id": 0}
-            ))
-            return appointments
-        except Exception as e:
-            logger.error(f"Error fetching patient appointments: {str(e)}")
-            return []
-
-    @staticmethod
-    def get_doctor_appointments(doctor_email: str) -> List[Dict]:
-        """Get all appointments for a doctor"""
-        try:
-            appointments = list(db.appointments.find(
-                {"doctor_email": doctor_email},
-                {"_id": 0}
-            ))
-            return appointments
-        except Exception as e:
-            logger.error(f"Error fetching doctor appointments: {str(e)}")
-            return []
-
-    @staticmethod
-    def update_appointment(appointment_id: str, update_data: Dict) -> bool:
-        """Update appointment"""
-        try:
-            update_data["updated_at"] = datetime.utcnow()
-            result = db.appointments.update_one(
-                {"id": appointment_id},
-                {"$set": update_data}
-            )
-            return result.modified_count > 0
-        except Exception as e:
-            logger.error(f"Error updating appointment: {str(e)}")
-            return False
-
-    @staticmethod
-    def cancel_appointment(appointment_id: str) -> bool:
-        """Cancel an appointment"""
-        try:
-            result = db.appointments.update_one(
-                {"id": appointment_id},
-                {
-                    "$set": {
-                        "status": AppointmentStatus.CANCELLED,
-                        "updated_at": datetime.utcnow()
-                    }
-                }
-            )
-            return result.modified_count > 0
-        except Exception as e:
-            logger.error(f"Error cancelling appointment: {str(e)}")
-            return False
-
-    @staticmethod
-    def get_available_slots(doctor_email: str, start_date: date, end_date: date) -> List[Dict]:
-        """Get available appointment slots for a doctor"""
-        try:
-            # This is a simplified implementation
-            # In a real app, you'd check doctor availability and existing appointments
-            slots = []
-            current_date = start_date
-            while current_date <= end_date:
-                # Generate time slots for each day (9 AM to 5 PM, 30-minute intervals)
-                for hour in range(9, 17):
-                    for minute in [0, 30]:
-                        slot_time = time(hour, minute)
-                        slots.append({
-                            "date": current_date,
-                            "time": slot_time,
-                            "doctor_email": doctor_email,
-                            "is_available": True,
-                            "duration_minutes": 30
-                        })
-                current_date = date(current_date.year, current_date.month, current_date.day + 1)
-            return slots
-        except Exception as e:
-            logger.error(f"Error fetching available slots: {str(e)}")
-            return []
-
-    @staticmethod
-    def set_doctor_availability(availability_data: Dict) -> str:
-        """Set doctor availability"""
-        try:
-            availability_id = str(uuid.uuid4())
-            
-            # Convert time objects to strings for MongoDB storage
-            start_time = availability_data["start_time"]
-            end_time = availability_data["end_time"]
-            
-            # Handle both time objects and string inputs
-            if hasattr(start_time, 'isoformat'):
-                start_time_str = start_time.isoformat()
-            else:
-                start_time_str = str(start_time)
-                
-            if hasattr(end_time, 'isoformat'):
-                end_time_str = end_time.isoformat()
-            else:
-                end_time_str = str(end_time)
-            
-            availability_doc = {
-                "id": availability_id,
-                "doctor_email": availability_data["doctor_email"],
-                "day_of_week": availability_data["day_of_week"],
-                "start_time": start_time_str,
-                "end_time": end_time_str,
-                "is_available": availability_data.get("is_available", True),
-                "max_appointments_per_slot": availability_data.get("max_appointments_per_slot", 1),
-                "created_at": datetime.utcnow()
-            }
-            db.doctor_availability.insert_one(availability_doc)
-            return availability_id
-        except Exception as e:
-            logger.error(f"Error setting doctor availability: {str(e)}")
-            raise
+    def update_dict(appointment_id: str, update_data: AppointmentUpdate) -> Dict:
+        """Convert update data to dictionary for MongoDB update"""
+        update_dict = {k: v for k, v in update_data.dict().items() if v is not None}
+        
+        if not update_dict:
+            raise ValueError("No valid fields to update")
+        
+        # Add updated timestamp
+        update_dict["updated_at"] = datetime.utcnow()
+        
+        return update_dict

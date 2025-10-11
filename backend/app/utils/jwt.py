@@ -31,8 +31,15 @@ def verify_token(token: str):
 
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"JWT Authentication attempt - Token received: {token[:20]}..." if token else "No token received")
+    
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        logger.info(f"JWT Authentication successful - User: {payload.get('sub', 'Unknown')}")
         return payload
-    except JWTError:
+    except JWTError as e:
+        logger.error(f"JWT Authentication failed - Error: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid token")

@@ -69,11 +69,16 @@ async def segment_two_modalities(
     current_user=Depends(get_current_user)
 ):
     """Segment brain scan with two modalities (FLAIR and T1CE)"""
+    logger.info(f"Brain MRI segmentation request received - User: {current_user.get('sub', 'Unknown')}")
+    logger.info(f"Request data - FLAIR image length: {len(request.flair_image)}, T1CE image length: {len(request.t1ce_image)}")
+    
     try:
+        logger.info("Starting brain MRI dual modality segmentation...")
         result = await segmentation_service.segment_dual_modality(
             request.flair_image, 
             request.t1ce_image
         )
+        logger.info("Brain MRI segmentation completed successfully")
         return result
         
     except Exception as e:
@@ -86,8 +91,13 @@ async def segment_breast_scan(
     current_user=Depends(get_current_user)
 ):
     """Segment breast ultrasound scan"""
+    logger.info(f"Breast segmentation request received - User: {current_user.get('sub', 'Unknown')}")
+    logger.info(f"Request data - Image length: {len(request.image_data)}")
+    
     try:
+        logger.info("Starting breast ultrasound segmentation...")
         result = await breast_segmentation_service.segment_breast_ultrasound(request.image_data)
+        logger.info("Breast segmentation completed successfully")
         return result
         
     except Exception as e:

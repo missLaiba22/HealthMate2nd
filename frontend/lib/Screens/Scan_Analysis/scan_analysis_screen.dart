@@ -43,10 +43,16 @@ class _ScanAnalysisScreenState extends State<ScanAnalysisScreen> {
     'Other'
   ];
 
-  final _api = SegmentationApiService(baseUrl: ApiConfig.baseUrl);
+  late final SegmentationApiService _api;
 
   Uint8List? _overlayBytes;
   bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _api = SegmentationApiService(baseUrl: ApiConfig.baseUrl, token: widget.token);
+  }
 
   // Check if two images are required
   bool get _requiresTwoImages => _selectedScanType == 'MRI' && _selectedTargetArea == 'Brain';
@@ -135,7 +141,7 @@ class _ScanAnalysisScreenState extends State<ScanAnalysisScreen> {
 
         if (response.statusCode == 200) {
           final result = jsonDecode(response.body);
-          final overlayB64 = result['overlay_png_base64'] as String;
+          final overlayB64 = result['segmentation_mask'] as String;
           final overlayBytes = SegmentationApiService.decodeBase64Image(overlayB64);
           
           // Navigate to breast ultrasound results screen
@@ -189,7 +195,7 @@ class _ScanAnalysisScreenState extends State<ScanAnalysisScreen> {
           flairBase64: flairB64,
           t1ceBase64: t1ceB64,
         );
-        final overlayB64 = res['overlay_png_base64'] as String;
+        final overlayB64 = res['segmentation_result'] as String;
         final overlayBytes = SegmentationApiService.decodeBase64Image(overlayB64);
         
         // Navigate to MRI segmentation results screen
@@ -296,7 +302,7 @@ class _ScanAnalysisScreenState extends State<ScanAnalysisScreen> {
         t1ceBase64: t1ceB64,
       );
 
-      final overlayB64 = res['overlay_png_base64'] as String;
+      final overlayB64 = res['segmentation_result'] as String;
       setState(() => _overlayBytes = SegmentationApiService.decodeBase64Image(overlayB64));
     } catch (e) {
       if (!mounted) return;

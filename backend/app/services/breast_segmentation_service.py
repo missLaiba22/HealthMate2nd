@@ -171,7 +171,148 @@ class BreastSegmentationService:
 
         logger.info(f"Final input shape for prediction: {ultrasound_batched.shape}")
         preds = self._model.predict(ultrasound_batched)
+        logger.info(f"Model prediction shape: {preds.shape}")
+        logger.info(f"Model prediction dtype: {preds.dtype}")
         return preds
+
+    async def segment_breast_ultrasound(self, image_data: str) -> dict:
+        """
+        High-level method for breast ultrasound segmentation.
+        This method handles the complete workflow from base64 image to segmentation result.
+        """
+        try:
+            import base64
+            from PIL import Image
+            import io
+            
+            # Decode base64 image
+            image_bytes = base64.b64decode(image_data)
+            image = Image.open(io.BytesIO(image_bytes))
+            
+            # Convert to numpy array
+            if image.mode != 'L':
+                image = image.convert('L')
+            image_array = np.array(image, dtype=np.float32)
+            
+            # Normalize if needed
+            if image_array.max() > 1.0:
+                image_array = image_array / 255.0
+            
+            # Get segmentation prediction
+            prediction = self.predict_from_ultrasound(image_array)
+            
+            # Process prediction to get binary mask
+            logger.info(f"Prediction shape: {prediction.shape}")
+            logger.info(f"Prediction dtype: {prediction.dtype}")
+            
+            # Handle different prediction output shapes
+            if prediction.ndim == 4:  # (batch, height, width, channels)
+                mask = prediction[0]  # Remove batch dimension
+            elif prediction.ndim == 3:  # (batch, height, width)
+                mask = prediction[0]  # Remove batch dimension
+            else:
+                mask = prediction
+            
+            # Ensure mask is 2D
+            if mask.ndim == 3:
+                # If still 3D, take the first channel or squeeze
+                if mask.shape[-1] == 1:
+                    mask = mask.squeeze(-1)
+                else:
+                    mask = mask[:, :, 0]
+            
+            # Convert to binary mask (threshold at 0.5)
+            binary_mask = (mask > 0.5).astype(np.uint8)
+            
+            logger.info(f"Final binary mask shape: {binary_mask.shape}")
+            logger.info(f"Binary mask dtype: {binary_mask.dtype}")
+            
+            # Calculate statistics
+            total_pixels = binary_mask.size
+            segmented_pixels = np.sum(binary_mask)
+            segmentation_percentage = (segmented_pixels / total_pixels) * 100
+            
+            # Convert mask back to base64 for response with red overlay
+            try:
+                # Ensure the mask is the right shape and type for PIL
+                if binary_mask.ndim != 2:
+                    logger.error(f"Binary mask has wrong dimensions: {binary_mask.shape}")
+                    raise ValueError(f"Expected 2D mask, got {binary_mask.ndim}D")
+                
+                # Create red overlay for lesions
+                if segmented_pixels > 0:
+                    # Create RGB image with red lesions
+                    red_overlay = np.zeros((binary_mask.shape[0], binary_mask.shape[1], 3), dtype=np.uint8)
+                    red_overlay[:, :, 0] = binary_mask * 255  # Red channel for lesions
+                    # Keep green and blue channels at 0 for pure red
+                    
+                    mask_image = Image.fromarray(red_overlay, mode='RGB')
+                    logger.info(f"Creating red overlay image from mask shape: {red_overlay.shape}")
+                else:
+                    # No lesions detected, return black image
+                    black_image = np.zeros((binary_mask.shape[0], binary_mask.shape[1], 3), dtype=np.uint8)
+                    mask_image = Image.fromarray(black_image, mode='RGB')
+                    logger.info("No lesions detected, returning black overlay")
+                
+                buffer = io.BytesIO()
+                mask_image.save(buffer, format='PNG')
+                mask_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+                
+            except Exception as e:
+                logger.error(f"Error creating mask image: {str(e)}")
+                # Return a simple black mask as fallback
+                fallback_mask = np.zeros((128, 128, 3), dtype=np.uint8)
+                mask_image = Image.fromarray(fallback_mask, mode='RGB')
+                buffer = io.BytesIO()
+                mask_image.save(buffer, format='PNG')
+                mask_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+            
+            # Calculate only verifiable measurements from segmentation data
+            lesion_present = bool(segmented_pixels > 0)  # Convert numpy bool to Python bool
+            lesion_percentage = float(segmentation_percentage)  # Ensure Python float
+            
+            # Generate basic insights based only on segmentation results
+            insights = []
+            if lesion_present:
+                insights.append("Lesion detected in ultrasound image")
+                insights.append(f"Lesion covers {lesion_percentage:.2f}% of the image area")
+            else:
+                insights.append("No lesions detected in the ultrasound image")
+            
+            # Generate basic recommendations
+            recommendations = []
+            if lesion_present:
+                recommendations.append("Consult with a radiologist for detailed analysis")
+                recommendations.append("Consider additional imaging studies for confirmation")
+            else:
+                recommendations.append("Continue regular breast screening schedule")
+            
+            return {
+                "success": True,
+                "segmentation_mask": mask_base64,
+                "statistics": {
+                    "total_pixels": int(total_pixels),
+                    "segmented_pixels": int(segmented_pixels),
+                    "segmentation_percentage": float(segmentation_percentage)
+                },
+                "measurements": {
+                    "lesion_percentage": lesion_percentage,
+                    "lesion_present": lesion_present,
+                    "total_pixel_count": int(total_pixels),
+                    "segmented_pixel_count": int(segmented_pixels)
+                },
+                "insights": insights,
+                "recommendations": recommendations,
+                "message": "Breast ultrasound segmentation completed successfully"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in breast ultrasound segmentation: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Failed to segment breast ultrasound image"
+            }
 
 
 # Singleton instance for reuse

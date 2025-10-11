@@ -2,6 +2,7 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 from .prompt_service import MedicalPromptEngine
+from .conversation_service import ConversationService
 from ..models.chat import ConversationHistory
 from datetime import datetime
 import logging
@@ -19,6 +20,7 @@ if not api_key:
 
 client = OpenAI(api_key=api_key)
 prompt_engine = MedicalPromptEngine()
+conversation_service = ConversationService()
 
 def get_conversation_history(email: str) -> ConversationHistory:
     """Get conversation history for a user."""
@@ -26,61 +28,55 @@ def get_conversation_history(email: str) -> ConversationHistory:
     return ConversationHistory(email)
 
 async def get_ai_response(message: str, email: str) -> str:
-    # Get conversation history
+    """Get AI response with optimized conversation management and no redundancy."""
     logger.info(f"Getting AI response for email: {email}")
     logger.info(f"Message received: {message}")
-    history = get_conversation_history(email)
     
-    # FE-1: Create context-aware prompt for multi-turn conversations
-    conversation_history = history.get_context()
+    # Get conversation context once (optimized)
+    conversation_history = conversation_service.get_context(email)
     logger.info(f"Conversation history: {conversation_history}")
-    prompt = prompt_engine.create_context_aware_prompt(message, conversation_history)
-    logger.info(f"Generated prompt: {prompt[:100]}...")
     
-    # If not health-related, return a proper response
+    # Check if health-related
     is_health = prompt_engine.is_health_related(message)
     logger.info(f"Message health-related check: {is_health} for message: {message}")
     
     if not is_health:
         logger.info(f"Message not health-related: {message}")
-        # Return a proper non-health response instead of the raw prompt
         non_health_response = "I'm your medical triage assistant. How can I help with your health concerns today?"
-        history.add_message("user", message)
-        history.add_message("assistant", non_health_response)
+        # Store conversation turn atomically (no redundancy)
+        conversation_service.add_conversation_turn(email, message, non_health_response)
         return non_health_response
 
-    # Create message list with context
-    context_messages = history.get_context()
-    logger.info(f"Context messages: {context_messages}")
+    # Create context-aware prompt
+    prompt = prompt_engine.create_context_aware_prompt(message, conversation_history)
+    logger.info(f"Generated prompt: {prompt[:100]}...")
     
+    # Create message list with context
     messages = [
         {"role": "system", "content": prompt_engine.system_context},
-        *context_messages,
-        {"role": "user", "content": message}  # Use the original message, not the prompt
+        *conversation_history,
+        {"role": "user", "content": message}
     ]
     
     logger.info(f"Final messages for OpenAI: {messages}")
     
     try:
         logger.info(f"Calling OpenAI API with {len(messages)} messages")
-        logger.info(f"Messages: {messages}")
         
         # Get response from OpenAI using GPT-4.1
         response = client.chat.completions.create(
-            model="gpt-4-1106-preview",  # Using GPT-4.1
+            model="gpt-4-1106-preview",
             messages=messages,
-            temperature=0.3,  # Lower temperature for more focused responses
-            max_tokens=100,   # Reduced token limit for shorter responses
-            top_p=0.9,        # Nucleus sampling for better response quality
-            frequency_penalty=0.3,  # Reduce repetition
-            presence_penalty=0.3,   # Encourage diverse responses
-            response_format={"type": "text"},  # Ensure text responses
-            seed=42  # For consistent responses
+            temperature=0.3,
+            max_tokens=100,
+            top_p=0.9,
+            frequency_penalty=0.3,
+            presence_penalty=0.3,
+            response_format={"type": "text"},
+            seed=42
         )
         
         logger.info(f"OpenAI API response received: {response}")
-        logger.info(f"Response choices: {response.choices}")
-        logger.info(f"First choice: {response.choices[0] if response.choices else 'No choices'}")
         
         # Extract and process response
         if not response.choices or len(response.choices) == 0:
@@ -94,9 +90,8 @@ async def get_ai_response(message: str, email: str) -> str:
             logger.error("Empty AI response")
             raise Exception("Empty response from OpenAI")
         
-        # Update conversation history
-        history.add_message("user", message)
-        history.add_message("assistant", ai_response)
+        # Store conversation turn atomically (no redundancy)
+        conversation_service.add_conversation_turn(email, message, ai_response)
         
         # Add disclaimer if needed
         final_response = prompt_engine.add_medical_disclaimer(ai_response)
@@ -127,8 +122,8 @@ async def get_ai_response(message: str, email: str) -> str:
                 logger.error("Empty GPT-3.5 response")
                 raise Exception("Empty response from GPT-3.5")
             
-            history.add_message("user", message)
-            history.add_message("assistant", ai_response)
+            # Store conversation turn atomically (no redundancy)
+            conversation_service.add_conversation_turn(email, message, ai_response)
             return prompt_engine.add_medical_disclaimer(ai_response)
         except Exception as fallback_error:
             logger.error(f"Fallback error: {str(fallback_error)}")

@@ -103,32 +103,19 @@ class _MRISegmentationResultsScreenState extends State<MRISegmentationResultsScr
   List<String> _generateInsights(Map<String, double> volumes) {
     final insights = <String>[];
     
-    // Report only actual measurements from segmentation
-    if (volumes['tumor_volume']! > 0.0) {
-      insights.add('Tumor volume: ${volumes['tumor_volume']!.toStringAsFixed(2)} cm³');
-    } else {
-      insights.add('No tumor detected in the segmentation');
-    }
-    
-    // Report edema measurements
-    if (volumes['edema_volume']! > 0.0) {
-      insights.add('Peritumoral edema volume: ${volumes['edema_volume']!.toStringAsFixed(2)} cm³');
-    } else {
-      insights.add('No peritumoral edema detected');
-    }
-    
-    // Report tumor composition (actual measurements only)
-    if (volumes['enhancing_volume']! > 0.0) {
-      insights.add('Enhancing tumor volume: ${volumes['enhancing_volume']!.toStringAsFixed(2)} cm³');
-    }
-    if (volumes['necrotic_volume']! > 0.0) {
-      insights.add('Necrotic core volume: ${volumes['necrotic_volume']!.toStringAsFixed(2)} cm³');
-    }
-    
-    // Report percentage of brain volume (calculated from actual data)
+    // Generate insights based only on percentages and ratios (no duplicate volumes)
     if (volumes['tumor_volume']! > 0.0 && volumes['total_brain_volume']! > 0.0) {
       final percentage = (volumes['tumor_volume']! / volumes['total_brain_volume']! * 100);
       insights.add('Tumor occupies ${percentage.toStringAsFixed(1)}% of total brain volume');
+      
+      // Add tumor composition analysis
+      if (volumes['enhancing_volume']! > 0.0 && volumes['necrotic_volume']! > 0.0) {
+        final enhancingRatio = (volumes['enhancing_volume']! / volumes['tumor_volume']!) * 100;
+        final necroticRatio = (volumes['necrotic_volume']! / volumes['tumor_volume']!) * 100;
+        insights.add('Tumor composition: ${enhancingRatio.toStringAsFixed(1)}% enhancing, ${necroticRatio.toStringAsFixed(1)}% necrotic');
+      }
+    } else {
+      insights.add('No tumor detected in the segmentation');
     }
     
     return insights;
@@ -372,11 +359,11 @@ class _MRISegmentationResultsScreenState extends State<MRISegmentationResultsScr
               ],
             ),
             const SizedBox(height: 16),
-            _buildVolumeRow('Total Brain Volume', '${volumes['total_brain_volume']?.toStringAsFixed(1)} cm³', Colors.blue),
-            _buildVolumeRow('Tumor Volume', '${volumes['tumor_volume']?.toStringAsFixed(1)} cm³', Colors.red),
-            _buildVolumeRow('Edema Volume', '${volumes['edema_volume']?.toStringAsFixed(1)} cm³', Colors.orange),
-            _buildVolumeRow('Enhancing Volume', '${volumes['enhancing_volume']?.toStringAsFixed(1)} cm³', Colors.purple),
-            _buildVolumeRow('Necrotic Volume', '${volumes['necrotic_volume']?.toStringAsFixed(1)} cm³', Colors.grey),
+            _buildVolumeRow('Total Brain Volume', '${volumes['total_brain_volume']?.toStringAsFixed(2)} cm³', Colors.black),
+            _buildVolumeRow('Tumor Volume', '${volumes['tumor_volume']?.toStringAsFixed(2)} cm³', Colors.red),
+            _buildVolumeRow('Edema Volume', '${volumes['edema_volume']?.toStringAsFixed(2)} cm³', Colors.green),
+            _buildVolumeRow('Enhancing Volume', '${volumes['enhancing_volume']?.toStringAsFixed(2)} cm³', Colors.blue),
+            _buildVolumeRow('Necrotic Volume', '${volumes['necrotic_volume']?.toStringAsFixed(2)} cm³', Colors.red),
           ],
         ),
       ),

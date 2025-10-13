@@ -242,11 +242,53 @@ class SegmentationService:
             pred_image.save(buffer, format='PNG')
             pred_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
             
+            # Generate insights and recommendations
+            insights = []
+            recommendations = []
+            
+            # Extract pixel counts from class_stats
+            necrotic_pixels = class_stats.get('necrotic_core', {}).get('pixels', 0)
+            edema_pixels = class_stats.get('edema', {}).get('pixels', 0)
+            enhancing_pixels = class_stats.get('enhancing_tumor', {}).get('pixels', 0)
+            
+            # Calculate volumes (assuming 1mm³ per pixel for simplicity)
+            pixel_to_volume_ratio = 1.0  # mm³ per pixel
+            necrotic_volume = (necrotic_pixels * pixel_to_volume_ratio) / 1000.0  # cm³
+            edema_volume = (edema_pixels * pixel_to_volume_ratio) / 1000.0  # cm³
+            enhancing_volume = (enhancing_pixels * pixel_to_volume_ratio) / 1000.0  # cm³
+            total_tumor_volume = necrotic_volume + enhancing_volume
+            
+            # Generate insights based only on percentages and ratios (no duplicate volumes)
+            if total_tumor_volume > 0.0 and total_pixels > 0:
+                total_brain_volume = (total_pixels * pixel_to_volume_ratio) / 1000.0
+                tumor_percentage = (total_tumor_volume / total_brain_volume) * 100
+                insights.append(f"Tumor occupies {tumor_percentage:.1f}% of total brain volume")
+                
+                # Add tumor composition analysis
+                if enhancing_volume > 0.0 and necrotic_volume > 0.0:
+                    enhancing_ratio = (enhancing_volume / total_tumor_volume) * 100
+                    necrotic_ratio = (necrotic_volume / total_tumor_volume) * 100
+                    insights.append(f"Tumor composition: {enhancing_ratio:.1f}% enhancing, {necrotic_ratio:.1f}% necrotic")
+            else:
+                insights.append("No tumor detected in the segmentation")
+            
+            # Generate recommendations
+            recommendations.append("Consult with neurosurgeon for treatment planning")
+            recommendations.append("Consider follow-up MRI in 4-6 weeks")
+            
+            if edema_volume > 0.0:
+                recommendations.append("Consider steroid therapy for edema management")
+            
+            recommendations.append("Monitor for neurological symptoms")
+            recommendations.append("Review with radiologist for detailed analysis")
+            
             return {
                 "success": True,
                 "segmentation_result": pred_base64,
                 "class_statistics": class_stats,
                 "total_pixels": int(total_pixels),
+                "insights": insights,
+                "recommendations": recommendations,
                 "message": "Dual modality brain segmentation completed successfully"
             }
             

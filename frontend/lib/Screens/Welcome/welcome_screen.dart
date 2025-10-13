@@ -11,7 +11,8 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin {
+class _WelcomeScreenState extends State<WelcomeScreen>
+    with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _pulseAnimation;
@@ -21,33 +22,24 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 3000),
       vsync: this,
     );
 
     _fadeAnimation = Tween<double>(
-      begin: 0.0,
+      begin: 0.6,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeIn,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _pulseAnimation = Tween<double>(
       begin: 1.0,
       end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _scaleAnimation = Tween<double>(
       begin: 0.8,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.repeat(reverse: true);
   }
@@ -66,35 +58,32 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              kPrimaryColor,
-              Colors.white,
-            ],
+            colors: [kPrimaryColor, Colors.white],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
               const Spacer(flex: 2),
-              SvgPicture.asset(
-                "assets/icons/chat.svg",
-                height: 200,
-              ),
+              SvgPicture.asset("assets/icons/chat.svg", height: 200),
               const Spacer(flex: 2),
-              const Text(
-                "Welcome to HealthMate",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: const Text(
+                  "Welcome to HealthMate",
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-              const Text(
-                "Your AI-Powered Health Assistant",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: const Text(
+                  "Your AI-Powered Health Assistant",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70, fontSize: 16),
                 ),
               ),
               const Spacer(flex: 2),
@@ -125,10 +114,7 @@ class MobileWelcomeScreen extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  kPrimaryColor,
-                  kPrimaryColor.withOpacity(0.8),
-                ],
+                colors: [kPrimaryColor, kPrimaryColor.withOpacity(0.8)],
               ),
             ),
             padding: const EdgeInsets.symmetric(vertical: 40),

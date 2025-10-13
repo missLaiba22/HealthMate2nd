@@ -19,16 +19,12 @@ class Conversation(BaseModel):
     updated_at: datetime
     context_window: int = 10
 
-class ConversationHistory:
-    """Pure data model for conversation history - no business logic"""
-    def __init__(self, email: str):
-        self.email = email
-        self.context_window = 10
-        logger.info(f"Initialized ConversationHistory for email: {email}")
+class ConversationHistory(BaseModel):
+    """Simplified model for conversation history tracking"""
+    email: str
+    context_window: int = 10
+    messages: List[Dict[str, str]] = []
 
-    def to_dict(self) -> Dict:
-        """Convert to dictionary for MongoDB storage"""
-        return {
-            "email": self.email,
-            "context_window": self.context_window
-        }
+    class Config:
+        from_attributes = True
+

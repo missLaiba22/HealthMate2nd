@@ -36,21 +36,25 @@ class _DoctorAvailabilityCardState extends State<DoctorAvailabilityCard> {
 
     try {
       final appointmentService = AppointmentService(widget.token);
-      final doctorsData = await appointmentService.getAvailableDoctors();
-      
+      final doctorsData = await appointmentService.getDoctors();
+
       setState(() {
-        doctors = doctorsData.map((doctor) {
-          return {
-            'id': doctor['email'], // Use email as ID
-            'name': doctor['full_name'] ?? 'Dr. Unknown',
-            'specialization': doctor['specialization'] ?? 'General Medicine',
-            'rating': 4.5, // Default rating since we don't have this in the database yet
-            'experience': '${doctor['years_of_experience'] ?? 0} years',
-            'email': doctor['email'],
-            'contact_number': doctor['contact_number'] ?? '',
-            'medical_license_number': doctor['medical_license_number'] ?? '',
-          };
-        }).toList();
+        doctors =
+            doctorsData.map((doctor) {
+              return {
+                'id': doctor['email'], // Use email as ID
+                'name': doctor['full_name'] ?? 'Dr. Unknown',
+                'specialization':
+                    doctor['specialization'] ?? 'General Medicine',
+                'rating':
+                    4.5, // Default rating since we don't have this in the database yet
+                'experience': '${doctor['years_of_experience'] ?? 0} years',
+                'email': doctor['email'],
+                'contact_number': doctor['contact_number'] ?? '',
+                'medical_license_number':
+                    doctor['medical_license_number'] ?? '',
+              };
+            }).toList();
       });
     } catch (e) {
       setState(() {
@@ -74,10 +78,7 @@ class _DoctorAvailabilityCardState extends State<DoctorAvailabilityCard> {
         child: Column(
           children: [
             Text(errorMessage!, style: const TextStyle(color: Colors.red)),
-            ElevatedButton(
-              onPressed: _loadDoctors,
-              child: const Text('Retry'),
-            ),
+            ElevatedButton(onPressed: _loadDoctors, child: const Text('Retry')),
           ],
         ),
       );
@@ -101,9 +102,7 @@ class _DoctorAvailabilityCardState extends State<DoctorAvailabilityCard> {
             SizedBox(height: 8),
             Text(
               'Please try again later',
-              style: TextStyle(
-                color: Colors.grey,
-              ),
+              style: TextStyle(color: Colors.grey),
             ),
           ],
         ),
@@ -155,14 +154,16 @@ class _DoctorAvailabilityCardState extends State<DoctorAvailabilityCard> {
                         const SizedBox(height: 4),
                         Text(
                           doctor['specialization'],
-                          style: const TextStyle(
-                            color: Colors.grey,
-                          ),
+                          style: const TextStyle(color: Colors.grey),
                         ),
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(Icons.star, color: Colors.amber, size: 16),
+                            const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                              size: 16,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               doctor['rating'].toString(),
@@ -173,9 +174,7 @@ class _DoctorAvailabilityCardState extends State<DoctorAvailabilityCard> {
                             const SizedBox(width: 16),
                             Text(
                               '${doctor['experience']} experience',
-                              style: const TextStyle(
-                                color: Colors.grey,
-                              ),
+                              style: const TextStyle(color: Colors.grey),
                             ),
                           ],
                         ),
@@ -183,10 +182,7 @@ class _DoctorAvailabilityCardState extends State<DoctorAvailabilityCard> {
                     ),
                   ),
                   if (isSelected)
-                    const Icon(
-                      Icons.check_circle,
-                      color: kPrimaryColor,
-                    ),
+                    const Icon(Icons.check_circle, color: kPrimaryColor),
                 ],
               ),
             ),
@@ -195,4 +191,4 @@ class _DoctorAvailabilityCardState extends State<DoctorAvailabilityCard> {
       },
     );
   }
-} 
+}

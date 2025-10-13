@@ -8,17 +8,15 @@ class AppointmentScreen extends StatefulWidget {
   final String token;
   final String email;
 
-  const AppointmentScreen({
-    Key? key,
-    required this.token,
-    required this.email,
-  }) : super(key: key);
+  const AppointmentScreen({Key? key, required this.token, required this.email})
+    : super(key: key);
 
   @override
   State<AppointmentScreen> createState() => _AppointmentScreenState();
 }
 
-class _AppointmentScreenState extends State<AppointmentScreen> with SingleTickerProviderStateMixin {
+class _AppointmentScreenState extends State<AppointmentScreen>
+    with SingleTickerProviderStateMixin {
   DateTime selectedDate = DateTime.now();
   String? selectedDoctor;
   String? selectedTimeSlot;
@@ -54,137 +52,141 @@ class _AppointmentScreenState extends State<AppointmentScreen> with SingleTicker
           ],
         ),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : errorMessage != null
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : errorMessage != null
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        errorMessage!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            errorMessage = null;
-                          });
-                        },
-                        child: const Text('Try Again'),
-                      ),
-                    ],
-                  ),
-                )
-              : TabBarView(
-                  controller: _tabController,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Doctor Selection Tab
-                    Padding(
-                      padding: const EdgeInsets.all(defaultPadding),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Available Doctors',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: defaultPadding),
-                          Expanded(
-                            child: DoctorAvailabilityCard(
-                              token: widget.token,
-                              onDoctorSelected: (doctor) {
-                                setState(() {
-                                  selectedDoctor = doctor;
-                                });
-                                _tabController.animateTo(1);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
+                    Text(
+                      errorMessage!,
+                      style: const TextStyle(color: Colors.red),
                     ),
-                    // Date Selection Tab
-                    Padding(
-                      padding: const EdgeInsets.all(defaultPadding),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Select Date',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: defaultPadding),
-                          Expanded(
-                            child: CalendarDatePicker(
-                              initialDate: selectedDate,
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(const Duration(days: 30)),
-                              onDateChanged: (date) {
-                                setState(() {
-                                  selectedDate = date;
-                                });
-                                _tabController.animateTo(2);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Time Slot Selection Tab
-                    Padding(
-                      padding: const EdgeInsets.all(defaultPadding),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Available Time Slots',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: defaultPadding),
-                          Expanded(
-                            child: TimeSlotSelector(
-                              selectedDate: selectedDate,
-                              doctorId: selectedDoctor,
-                              token: widget.token,
-                              onTimeSlotSelected: (timeSlot) {
-                                setState(() {
-                                  selectedTimeSlot = timeSlot;
-                                });
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: defaultPadding),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _canBookAppointment()
-                                  ? () => _bookAppointment()
-                                  : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: kPrimaryColor,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                              ),
-                              child: const Text(
-                                'Book Appointment',
-                                style: TextStyle(fontSize: 16),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          errorMessage = null;
+                        });
+                      },
+                      child: const Text('Try Again'),
                     ),
                   ],
                 ),
+              )
+              : TabBarView(
+                controller: _tabController,
+                children: [
+                  // Doctor Selection Tab
+                  Padding(
+                    padding: const EdgeInsets.all(defaultPadding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Available Doctors',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: defaultPadding),
+                        Expanded(
+                          child: DoctorAvailabilityCard(
+                            token: widget.token,
+                            onDoctorSelected: (doctor) {
+                              setState(() {
+                                selectedDoctor = doctor;
+                              });
+                              _tabController.animateTo(1);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Date Selection Tab
+                  Padding(
+                    padding: const EdgeInsets.all(defaultPadding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Select Date',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: defaultPadding),
+                        Expanded(
+                          child: CalendarDatePicker(
+                            initialDate: selectedDate,
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 30),
+                            ),
+                            onDateChanged: (date) {
+                              setState(() {
+                                selectedDate = date;
+                              });
+                              _tabController.animateTo(2);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Time Slot Selection Tab
+                  Padding(
+                    padding: const EdgeInsets.all(defaultPadding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Available Time Slots',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: defaultPadding),
+                        Expanded(
+                          child: TimeSlotSelector(
+                            selectedDate: selectedDate,
+                            doctorId: selectedDoctor,
+                            token: widget.token,
+                            onTimeSlotSelected: (timeSlot) {
+                              setState(() {
+                                selectedTimeSlot = timeSlot;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: defaultPadding),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed:
+                                _canBookAppointment()
+                                    ? () => _bookAppointment()
+                                    : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kPrimaryColor,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: const Text(
+                              'Book Appointment',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
     );
   }
 
@@ -204,6 +206,7 @@ class _AppointmentScreenState extends State<AppointmentScreen> with SingleTicker
         doctorId: selectedDoctor!,
         date: selectedDate,
         timeSlot: selectedTimeSlot!,
+        patientEmail: widget.email,
       );
 
       if (mounted) {
@@ -216,13 +219,39 @@ class _AppointmentScreenState extends State<AppointmentScreen> with SingleTicker
         Navigator.pop(context);
       }
     } catch (e) {
+      String message = e.toString();
+      // Clean up the error message by removing "Exception: " prefix
+      message = message.replaceAll('Exception: ', '');
+
       setState(() {
-        errorMessage = 'Failed to book appointment. Please try again.';
+        errorMessage = message;
       });
+
+      // Show error in snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Refresh',
+              textColor: Colors.white,
+              onPressed: () {
+                // Refresh available slots
+                if (selectedDoctor != null) {
+                  setState(() {
+                    selectedTimeSlot = null;
+                  });
+                }
+              },
+            ),
+          ),
+        );
+      }
     } finally {
       setState(() {
         isLoading = false;
       });
     }
   }
-} 
+}

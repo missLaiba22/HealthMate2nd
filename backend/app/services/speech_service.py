@@ -11,10 +11,21 @@ logger = logging.getLogger(__name__)
 
 class SpeechService:
     def __init__(self):
-        # Load the Whisper model (using base model for faster inference)
-        logger.info("Initializing Whisper model...")
-        self.model = whisper.load_model("base")
+        # Load the Whisper model (using small.en model for better accuracy)
+        logger.info("Initializing Whisper model (English-optimized)...")
+        self.model = whisper.load_model("small.en")
         logger.info("Whisper model loaded successfully")
+        
+        # Set optimized transcription options
+        self.transcribe_options = {
+            "temperature": 0.0,  # Use greedy decoding for more reliable results
+            "no_speech_threshold": 0.3,  # More sensitive to quiet speech
+            "logprob_threshold": -1.0,  # Less strict on uncertain predictions
+            "compression_ratio_threshold": 2.4,
+            "condition_on_previous_text": True,  # Use context for better understanding
+            "initial_prompt": "Medical conversation in English: ",  # Help with medical terms
+            "word_timestamps": True,  # Enable word-level timing for better accuracy
+        }
     
     async def transcribe_audio(self, audio_file_path: str) -> str:
         """
@@ -120,12 +131,36 @@ class SpeechService:
                 pass
     
     async def _try_direct_transcription(self, audio_path: Path) -> str:
-        """Try direct transcription with the original file"""
-        logger.info("Trying direct transcription...")
-        result = self.model.transcribe(str(audio_path), verbose=False)
-        if result and "text" in result:
-            return result["text"]
-        raise ValueError("No text in result")
+        """Try direct transcription with optimized parameters"""
+        try:
+            # Pre-process audio if possible
+            try:
+                import soundfile as sf
+                data, sr = sf.read(str(audio_path))
+                # Normalize audio
+                data = data / np.abs(data).max()
+                # Save normalized audio
+                sf.write(str(audio_path), data, sr)
+            except ImportError:
+                logger.warning("soundfile not available for audio preprocessing")
+            
+            # Transcribe with optimized parameters
+            result = self.model.transcribe(
+                str(audio_path),
+                **self.transcribe_options
+            )
+            
+            # Post-process the text
+            text = result["text"]
+            
+            # Clean up common medical transcription errors
+            text = text.replace("um ", "").replace("uh ", "")
+            text = text.replace("gonna", "going to").replace("wanna", "want to")
+            
+            return text.strip()
+        except Exception as e:
+            logger.error(f"Direct transcription failed: {e}")
+            raise
     
     async def _try_temp_file_approach(self, audio_path: Path) -> str:
         """Try with a simple temp file"""

@@ -28,6 +28,20 @@ try:
     if 'conversations' not in collections:
         db.create_collection('conversations')
         logger.info("Created conversations collection")
+    
+    # Ensure scan_reports collection exists
+    if 'scan_reports' not in collections:
+        db.create_collection('scan_reports')
+        logger.info("Created scan_reports collection")
+    
+    # Ensure doctor availability collections exist
+    if 'doctor_schedules' not in collections:
+        db.create_collection('doctor_schedules')
+        logger.info("Created doctor_schedules collection")
+    
+    if 'appointment_slots' not in collections:
+        db.create_collection('appointment_slots')
+        logger.info("Created appointment_slots collection")
 
 except Exception as e:
     logger.error(f"Failed to connect to MongoDB: {str(e)}")

@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from .prompt_service import MedicalPromptEngine
 from .conversation_service import ConversationService
-from ..models.chat import ConversationHistory
+from ..models.chat import ConversationHistory, Message
 from datetime import datetime
 import logging
 
@@ -21,11 +21,6 @@ if not api_key:
 client = OpenAI(api_key=api_key)
 prompt_engine = MedicalPromptEngine()
 conversation_service = ConversationService()
-
-def get_conversation_history(email: str) -> ConversationHistory:
-    """Get conversation history for a user."""
-    logger.info(f"Getting conversation history for email: {email}")
-    return ConversationHistory(email)
 
 async def get_ai_response(message: str, email: str) -> str:
     """Get AI response with optimized conversation management and no redundancy."""

@@ -12,9 +12,7 @@ class AppointmentService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/appointments/my-appointments'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
@@ -32,9 +30,7 @@ class AppointmentService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/appointments/doctors'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
@@ -48,48 +44,27 @@ class AppointmentService {
     }
   }
 
-  // Alias method for backward compatibility
-  Future<List<Map<String, dynamic>>> getAvailableDoctors() async {
-    return await getDoctors();
-  }
-
-  Future<List<String>> getTimeSlots({
-    required String doctorEmail,
-    required DateTime date,
-  }) async {
-    try {
-      final dateStr = date.toIso8601String().split('T')[0];
-      final response = await http.get(
-        Uri.parse('$baseUrl/appointments/time-slots?doctor_email=$doctorEmail&date=$dateStr'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final List<dynamic> timeSlots = data['time_slots'] ?? [];
-        return timeSlots.cast<String>();
-      } else {
-        throw Exception('Failed to fetch time slots');
-      }
-    } catch (e) {
-      throw Exception('Error: $e');
-    }
-  }
-
-  // Alias method for backward compatibility
-  Future<List<String>> getAvailableTimeSlots(String doctorId, DateTime date) async {
-    return await getTimeSlots(doctorEmail: doctorId, date: date);
-  }
-
   Future<Map<String, dynamic>> bookAppointment({
     required String doctorId,
     required DateTime date,
-    required String timeSlot,
+    required String timeSlot, // This should now be in 24-hour format (HH:MM:SS)
     String? notes,
+    required String patientEmail,
   }) async {
     try {
+      // First verify if the slot is still available by getting real-time availability
+      final slots = await getAvailableSlots(
+        doctorEmail: doctorId,
+        startDate: date,
+      );
+
+      // Now slots will only contain truly available slots (not booked)
+      if (!slots.contains(timeSlot)) {
+        throw Exception(
+          'This time slot has just been booked. Please choose another available time.',
+        );
+      }
+
       final response = await http.post(
         Uri.parse('$baseUrl/appointments/create'),
         headers: {
@@ -97,7 +72,7 @@ class AppointmentService {
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
-          'patient_email': '', // Will be filled by backend from token
+          'patient_email': patientEmail,
           'doctor_email': doctorId,
           'appointment_date': date.toIso8601String().split('T')[0],
           'appointment_time': timeSlot,
@@ -109,48 +84,24 @@ class AppointmentService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Failed to book appointment');
+        final errorData = jsonDecode(response.body);
+        final errorMessage =
+            errorData['detail'] ?? 'Failed to book appointment';
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      throw Exception('Error: $e');
-    }
-  }
-
-  Future<Map<String, dynamic>> createAppointment({
-    required String doctorEmail,
-    required DateTime appointmentDate,
-    required String appointmentTime,
-    String appointmentType = 'consultation',
-    String? notes,
-  }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/appointments/create'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'patient_email': '', // Will be filled by backend from token
-          'doctor_email': doctorEmail,
-          'appointment_date': appointmentDate.toIso8601String().split('T')[0],
-          'appointment_time': appointmentTime,
-          'appointment_type': appointmentType,
-          'notes': notes,
-        }),
+      // Check if the error is from our slot verification
+      if (e.toString().contains('no longer available')) {
+        rethrow;
+      }
+      // For other errors, provide a more user-friendly message
+      throw Exception(
+        'Unable to book appointment. Please try again or choose another time slot.',
       );
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        throw Exception('Failed to create appointment');
-      }
-    } catch (e) {
-      throw Exception('Error: $e');
     }
   }
 
-  Future<List<Map<String, dynamic>>> getAvailableSlots({
+  Future<List<String>> getAvailableSlots({
     required String doctorEmail,
     required DateTime startDate,
     DateTime? endDate,
@@ -158,22 +109,28 @@ class AppointmentService {
     try {
       final startDateStr = startDate.toIso8601String().split('T')[0];
       final endDateStr = endDate?.toIso8601String().split('T')[0];
-      
-      String url = '$baseUrl/appointments/slots/$doctorEmail?start_date=$startDateStr';
+
+      String url =
+          '$baseUrl/doctor-availability/available-slots/$doctorEmail?start_date=$startDateStr';
       if (endDateStr != null) {
         url += '&end_date=$endDateStr';
       }
 
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.cast<Map<String, dynamic>>();
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          final List<dynamic> slots = data['slots'] ?? [];
+          return slots.cast<String>();
+        } else {
+          throw Exception(
+            'Failed to get available slots: ${data['error'] ?? 'Unknown error'}',
+          );
+        }
       } else {
         throw Exception('Failed to get available slots');
       }
@@ -186,9 +143,7 @@ class AppointmentService {
     try {
       final response = await http.delete(
         Uri.parse('$baseUrl/appointments/$appointmentId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       return response.statusCode == 200;
@@ -207,9 +162,10 @@ class AppointmentService {
   }) async {
     try {
       final Map<String, dynamic> updateData = {};
-      
+
       if (appointmentDate != null) {
-        updateData['appointment_date'] = appointmentDate.toIso8601String().split('T')[0];
+        updateData['appointment_date'] =
+            appointmentDate.toIso8601String().split('T')[0];
       }
       if (appointmentTime != null) {
         updateData['appointment_time'] = appointmentTime;
@@ -243,75 +199,223 @@ class AppointmentService {
     }
   }
 
-  Future<void> setDoctorAvailability({
-    required String doctorEmail,
-    required int dayOfWeek,
-    required String startTime,
-    required String endTime,
-    bool isAvailable = true,
-    int maxAppointmentsPerSlot = 1,
-  }) async {
+  Future<void> setWeeklySchedule(Map<String, dynamic> scheduleData) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/appointments/availability'),
+        Uri.parse('$baseUrl/doctor-availability/set-weekly-schedule'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({
-          'doctor_email': doctorEmail,
-          'day_of_week': dayOfWeek,
-          'start_time': startTime,
-          'end_time': endTime,
-          'is_available': isAvailable,
-          'max_appointments_per_slot': maxAppointmentsPerSlot,
-        }),
+        body: jsonEncode(scheduleData),
       );
 
       if (response.statusCode != 200) {
-        throw Exception('Failed to set availability');
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['detail'] ?? 'Failed to set weekly schedule');
       }
     } catch (e) {
       throw Exception('Error: $e');
     }
   }
 
-  // TODO: Implement delete availability endpoint in backend
-  // Future<void> deleteDoctorAvailability({
-  //   required String availabilityDate, // YYYY-MM-DD format
-  // }) async {
-  //   try {
-  //     final response = await http.delete(
-  //       Uri.parse('$baseUrl/appointments/availability?availability_date=$availabilityDate'),
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'Authorization': 'Bearer $token',
-  //       },
-  //     );
-
-  //     if (response.statusCode != 200) {
-  //       throw Exception('Failed to delete availability');
-  //     }
-  //   } catch (e) {
-  //     throw Exception('Error: $e');
-  //   }
-  // }
-
   Future<List<Map<String, dynamic>>> getDoctorAvailability() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/appointments/my-availability'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        Uri.parse('$baseUrl/doctor-availability/my-weekly-schedule'),
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final List<dynamic> availabilityRecords = data['availability_records'] ?? [];
-        return availabilityRecords.cast<Map<String, dynamic>>();
+        if (data['success'] == true) {
+          final schedule = data['schedule'];
+          if (schedule == null) {
+            // No schedule set yet, return empty list
+            return <Map<String, dynamic>>[];
+          }
+          // Return the schedule as a single item list for compatibility
+          return [schedule];
+        } else {
+          throw Exception(
+            'Failed to get doctor availability: ${data['error'] ?? 'Unknown error'}',
+          );
+        }
       } else {
         throw Exception('Failed to get doctor availability');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  // ===== NEW DAILY ADJUSTMENTS & BLOCK TIME METHODS =====
+
+  Future<Map<String, dynamic>> getDayView(
+    String doctorEmail,
+    DateTime viewDate,
+  ) async {
+    try {
+      final dateStr = viewDate.toIso8601String().split('T')[0];
+      final response = await http.get(
+        Uri.parse(
+          '$baseUrl/doctor-availability/day-view/$doctorEmail?view_date=$dateStr',
+        ),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          return data['day_view'];
+        } else {
+          throw Exception(
+            'Failed to get day view: ${data['error'] ?? 'Unknown error'}',
+          );
+        }
+      } else {
+        throw Exception('Failed to get day view');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  Future<void> createDailyOverride(
+    String doctorEmail,
+    Map<String, dynamic> overrideData,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse(
+          '$baseUrl/doctor-availability/create-daily-override?doctor_email=$doctorEmail',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(overrideData),
+      );
+
+      if (response.statusCode != 200) {
+        final errorData = jsonDecode(response.body);
+        throw Exception(
+          errorData['detail'] ?? 'Failed to create daily override',
+        );
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  Future<void> addBlockTime(
+    String doctorEmail,
+    DateTime blockDate,
+    Map<String, dynamic> blockTimeData,
+  ) async {
+    try {
+      final dateStr = blockDate.toIso8601String().split('T')[0];
+      final response = await http.post(
+        Uri.parse(
+          '$baseUrl/doctor-availability/add-block-time?doctor_email=$doctorEmail&block_date=$dateStr',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(blockTimeData),
+      );
+
+      if (response.statusCode != 200) {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['detail'] ?? 'Failed to add block time');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  Future<void> deleteDailyOverride(
+    String doctorEmail,
+    DateTime overrideDate,
+  ) async {
+    try {
+      final dateStr = overrideDate.toIso8601String().split('T')[0];
+      final response = await http.delete(
+        Uri.parse(
+          '$baseUrl/doctor-availability/delete-daily-override/$doctorEmail?override_date=$dateStr',
+        ),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode != 200) {
+        final errorData = jsonDecode(response.body);
+        throw Exception(
+          errorData['detail'] ?? 'Failed to delete daily override',
+        );
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAvailableSlotsWithOverrides({
+    required String doctorEmail,
+    required DateTime startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      final startDateStr = startDate.toIso8601String().split('T')[0];
+      final endDateStr = endDate?.toIso8601String().split('T')[0];
+
+      String url =
+          '$baseUrl/doctor-availability/available-slots-with-overrides/$doctorEmail?start_date=$startDateStr';
+      if (endDateStr != null) {
+        url += '&end_date=$endDateStr';
+      }
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          final List<dynamic> slots = data['slots'] ?? [];
+          return slots.cast<Map<String, dynamic>>();
+        } else {
+          throw Exception(
+            'Failed to get available slots with overrides: ${data['error'] ?? 'Unknown error'}',
+          );
+        }
+      } else {
+        throw Exception('Failed to get available slots with overrides');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  Future<List<String>> getBlockTimeReasons() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/doctor-availability/block-time-reasons'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          final List<dynamic> reasons = data['reasons'] ?? [];
+          return reasons.cast<String>();
+        } else {
+          throw Exception(
+            'Failed to get block time reasons: ${data['error'] ?? 'Unknown error'}',
+          );
+        }
+      } else {
+        throw Exception('Failed to get block time reasons');
       }
     } catch (e) {
       throw Exception('Error: $e');

@@ -18,8 +18,8 @@ class ConversationalScreen extends StatefulWidget {
   final String userRole; // Add user role parameter
 
   const ConversationalScreen({
-    super.key, 
-    required this.token, 
+    super.key,
+    required this.token,
     required this.email,
     required this.userRole,
   });
@@ -28,7 +28,8 @@ class ConversationalScreen extends StatefulWidget {
   State<ConversationalScreen> createState() => _ConversationalScreenState();
 }
 
-class _ConversationalScreenState extends State<ConversationalScreen> with TickerProviderStateMixin {
+class _ConversationalScreenState extends State<ConversationalScreen>
+    with TickerProviderStateMixin {
   final _audioRecorder = AudioRecorder();
   final _flutterTts = FlutterTts();
   bool _isRecording = false;
@@ -39,23 +40,27 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _rippleAnimation;
-  
+
   @override
   void initState() {
     super.initState();
     _initRecorder();
     _initAnimations();
     _initTts();
-    
+
     // Add welcome message
-    _currentResponse = "Hello! I'm your Medical Assistant. How can I help you today?";
+    _currentResponse =
+        "Hello! I'm your Medical Assistant. How can I help you today?";
     _speakResponse(_currentResponse);
   }
 
   Future<void> _initTts() async {
+    // Fixed English language for TTS
     await _flutterTts.setLanguage("en-US");
+    // Optimized speech parameters for English
     await _flutterTts.setPitch(1.0);
     await _flutterTts.setSpeechRate(0.5);
+    await _flutterTts.setVoice({"name": "en-US-language", "locale": "en-US"});
   }
 
   void _initAnimations() {
@@ -84,18 +89,20 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
 
   Future<void> _startRecording() async {
     try {
+      // Don't start recording if the assistant is speaking
+      if (_isSpeaking) {
+        return;
+      }
+
       if (await _audioRecorder.hasPermission()) {
         final directory = await getTemporaryDirectory();
         final filePath = '${directory.path}/audio_recording.wav';
-        
+
         await _audioRecorder.start(
-          RecordConfig(
-            encoder: AudioEncoder.wav,
-            sampleRate: 16000,
-          ),
+          RecordConfig(encoder: AudioEncoder.wav, sampleRate: 16000),
           path: filePath,
         );
-        
+
         setState(() {
           _isRecording = true;
         });
@@ -132,15 +139,10 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
       );
 
       // Add Authorization header
-      request.headers.addAll({
-        'Authorization': 'Bearer ${widget.token}',
-      });
+      request.headers.addAll({'Authorization': 'Bearer ${widget.token}'});
 
       request.files.add(
-        await http.MultipartFile.fromPath(
-          'audio_file',
-          filePath,
-        ),
+        await http.MultipartFile.fromPath('audio_file', filePath),
       );
 
       final response = await request.send();
@@ -155,13 +157,14 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
         String transcribedText;
         if (data['transcription'] is String) {
           transcribedText = data['transcription'];
-        } else if (data['transcription'] is Map && data['transcription']['text'] != null) {
+        } else if (data['transcription'] is Map &&
+            data['transcription']['text'] != null) {
           // Handle nested structure: {transcription: {text: "message"}}
           transcribedText = data['transcription']['text'].toString();
         } else {
           transcribedText = data['transcription'].toString();
         }
-        
+
         if (mounted) {
           setState(() {
             _transcribedText = transcribedText;
@@ -173,11 +176,14 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
           }
         }
       } else {
-        print('Speech transcription failed with status: ${response.statusCode}');
+        print(
+          'Speech transcription failed with status: ${response.statusCode}',
+        );
         print('Response body: $responseBody');
         if (mounted) {
           setState(() {
-            _transcribedText = 'Audio processing failed. Please try recording again.';
+            _transcribedText =
+                'Audio processing failed. Please try recording again.';
             _isProcessing = false;
           });
         }
@@ -202,21 +208,19 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
       print('Sending chat request to: ${ApiConfig.baseUrl}/chat');
       print('Message: $message');
       print('Token: ${widget.token.substring(0, 20)}...');
-      
+
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/chat'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${widget.token}',
         },
-        body: jsonEncode({
-          'message': message,
-        }),
+        body: jsonEncode({'message': message}),
       );
 
       print('Chat response status: ${response.statusCode}');
       print('Chat response body: ${response.body}');
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         print('Parsed response data: $data');
@@ -266,12 +270,13 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
         backgroundColor: kPrimaryColor,
         elevation: 0,
         leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
-          ),
+          builder:
+              (context) => IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white),
+                onPressed: () {
+                  Scaffold.of(context).openDrawer();
+                },
+              ),
         ),
         title: const Text(
           'Medical Assistant',
@@ -284,38 +289,26 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                kPrimaryColor,
-                Colors.white,
-              ],
+              colors: [kPrimaryColor, Colors.white],
             ),
           ),
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
               DrawerHeader(
-                decoration: BoxDecoration(
-                  color: kPrimaryColor,
-                ),
+                decoration: BoxDecoration(color: kPrimaryColor),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const CircleAvatar(
                       radius: 30,
                       backgroundColor: Colors.white,
-                      child: Icon(
-                        Icons.person,
-                        size: 35,
-                        color: kPrimaryColor,
-                      ),
+                      child: Icon(Icons.person, size: 35, color: kPrimaryColor),
                     ),
                     const SizedBox(height: 10),
                     Text(
                       widget.email,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ],
                 ),
@@ -326,7 +319,8 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
                 onTap: () {
                   Navigator.pop(context);
                   setState(() {
-                    _currentResponse = "Hello! I'm your Medical Assistant. How can I help you today?";
+                    _currentResponse =
+                        "Hello! I'm your Medical Assistant. How can I help you today?";
                     _transcribedText = '';
                     _isProcessing = false;
                     _isSpeaking = false;
@@ -335,45 +329,55 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.medical_services, color: kPrimaryColor),
+                leading: const Icon(
+                  Icons.medical_services,
+                  color: kPrimaryColor,
+                ),
                 title: const Text('Scan Analysis'),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ScanAnalysisScreen(
-                        token: widget.token,
-                        patientEmail: widget.email,
-                      ),
+                      builder:
+                          (context) => ScanAnalysisScreen(
+                            token: widget.token,
+                            patientEmail: widget.email,
+                          ),
                     ),
                   );
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.calendar_today, color: kPrimaryColor),
-                title: Text(widget.userRole == 'doctor' ? 'My Appointments' : 'Book Appointment'),
+                title: Text(
+                  widget.userRole == 'doctor'
+                      ? 'My Appointments'
+                      : 'Book Appointment',
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   if (widget.userRole == 'doctor') {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => MyAppointmentsScreen(
-                          token: widget.token,
-                          email: widget.email,
-                          userRole: widget.userRole,
-                        ),
+                        builder:
+                            (context) => MyAppointmentsScreen(
+                              token: widget.token,
+                              email: widget.email,
+                              userRole: widget.userRole,
+                            ),
                       ),
                     );
                   } else {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => AppointmentScreen(
-                          token: widget.token,
-                          email: widget.email,
-                        ),
+                        builder:
+                            (context) => AppointmentScreen(
+                              token: widget.token,
+                              email: widget.email,
+                            ),
                       ),
                     );
                   }
@@ -389,10 +393,11 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => DoctorAvailabilityScreen(
-                          token: widget.token,
-                          email: widget.email,
-                        ),
+                        builder:
+                            (context) => DoctorAvailabilityScreen(
+                              token: widget.token,
+                              email: widget.email,
+                            ),
                       ),
                     );
                   },
@@ -432,14 +437,11 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  kPrimaryColor,
-                  Colors.white,
-                ],
+                colors: [kPrimaryColor, Colors.white],
               ),
             ),
           ),
-          
+
           // Main content
           Column(
             children: [
@@ -450,21 +452,50 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (_currentResponse.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                          child: Text(
-                            _currentResponse,
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w400,
+                        Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 16,
+                              ),
+                              child: Text(
+                                _currentResponse,
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
-                            textAlign: TextAlign.center,
-                          ),
+                            if (_isSpeaking)
+                              const Padding(
+                                padding: EdgeInsets.only(top: 8),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.volume_up,
+                                      color: kPrimaryColor,
+                                      size: 20,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "Speaking...",
+                                      style: TextStyle(
+                                        color: kPrimaryColor,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ),
-                      
+
                       const SizedBox(height: 48),
-                      
+
                       // Voice button section
                       Stack(
                         alignment: Alignment.center,
@@ -484,21 +515,28 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
                                 );
                               },
                             ),
-                          
+
                           // Record button
                           GestureDetector(
-                            onTap: _isRecording ? _stopRecording : _startRecording,
+                            onTap:
+                                _isRecording ? _stopRecording : _startRecording,
                             child: AnimatedBuilder(
                               animation: _scaleAnimation,
                               builder: (context, child) {
                                 return Transform.scale(
-                                  scale: _isRecording ? _scaleAnimation.value : 1.0,
+                                  scale:
+                                      _isRecording
+                                          ? _scaleAnimation.value
+                                          : 1.0,
                                   child: Container(
                                     width: 80,
                                     height: 80,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: _isRecording ? Colors.red : kPrimaryColor,
+                                      color:
+                                          _isRecording
+                                              ? Colors.red
+                                              : kPrimaryColor,
                                       boxShadow: [
                                         BoxShadow(
                                           color: kPrimaryColor.withOpacity(0.3),
@@ -519,25 +557,19 @@ class _ConversationalScreenState extends State<ConversationalScreen> with Ticker
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       // Status text
                       if (_isProcessing)
                         const Text(
                           'Processing...',
-                          style: TextStyle(
-                            color: Colors.black54,
-                            fontSize: 16,
-                          ),
+                          style: TextStyle(color: Colors.black54, fontSize: 16),
                         )
                       else if (_isRecording)
                         const Text(
                           'Recording...',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 16,
-                          ),
+                          style: TextStyle(color: Colors.red, fontSize: 16),
                         ),
                     ],
                   ),

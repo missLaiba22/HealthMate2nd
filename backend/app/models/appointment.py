@@ -77,19 +77,6 @@ class AppointmentReminder(BaseModel):
     reminder_sent: bool = False
     sent_at: Optional[datetime] = None
 
-class DoctorAvailabilityRequest(BaseModel):
-    doctor_email: EmailStr
-    day_of_week: int
-    start_time: time
-    end_time: time
-    is_available: bool = True
-    max_appointments_per_slot: int = 1
-    
-    class Config:
-        # Allow string input for time fields and convert them
-        json_encoders = {
-            time: lambda v: v.isoformat()
-        }
 
 class AppointmentModel:
     """Pure data model for appointments - no business logic"""
@@ -104,7 +91,7 @@ class AppointmentModel:
             "id": str(uuid.uuid4()),
             "patient_email": appointment_data.patient_email,
             "doctor_email": appointment_data.doctor_email,
-            "appointment_date": appointment_data.appointment_date,
+            "appointment_date": appointment_data.appointment_date.isoformat(),
             "appointment_time": appointment_time_str,
             "duration_minutes": appointment_data.duration_minutes,
             "appointment_type": appointment_data.appointment_type,
@@ -142,7 +129,17 @@ class AppointmentModel:
     @staticmethod
     def update_dict(appointment_id: str, update_data: AppointmentUpdate) -> Dict:
         """Convert update data to dictionary for MongoDB update"""
-        update_dict = {k: v for k, v in update_data.dict().items() if v is not None}
+        update_dict = {}
+        
+        # Handle each field individually to convert date/time objects to strings
+        for k, v in update_data.dict().items():
+            if v is not None:
+                if k == "appointment_date" and hasattr(v, 'isoformat'):
+                    update_dict[k] = v.isoformat()
+                elif k == "appointment_time" and hasattr(v, 'isoformat'):
+                    update_dict[k] = v.isoformat()
+                else:
+                    update_dict[k] = v
         
         if not update_dict:
             raise ValueError("No valid fields to update")

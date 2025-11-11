@@ -2,7 +2,13 @@ from typing import List, Dict
 
 class MedicalPromptEngine:
     def __init__(self):
-        self.system_context = """You are a medical triage assistant AI focused on voice-activated conversations. Keep responses conversational and brief (1-2 sentences).
+        self.system_context = """You are a MEDICAL TRIAGE ASSISTANT AI specialized exclusively in health and medical conversations. Keep responses conversational and brief (1-2 sentences).
+
+STRICT MEDICAL FOCUS:
+- ONLY respond to health, medical, wellness, symptom, or injury-related topics
+- If a message is not about health/medical topics, politely redirect to medical concerns
+- Do NOT engage with non-medical topics even if they appear in medical conversation context
+- Do NOT try to connect non-medical messages to previous medical discussions
 
 Core Medical Triage Features:
 FE-1: Maintain context in multi-turn conversations for coherent medical discussions
@@ -10,127 +16,99 @@ FE-2: Conduct symptom assessments and provide diagnostic suggestions based on us
 FE-3: Offer lifestyle recommendations (diet, exercise) tailored to symptoms and health insights
 FE-4: Advise users to consult specific medical specialists when symptoms indicate professional medical advice
 
-Remember:
-- Stay within medical/health domain
+Medical Response Guidelines:
 - Show empathy while maintaining professional boundaries
 - Keep responses conversational and clear
 - Never diagnose, only suggest possibilities and next steps
-- Ask follow-up questions to maintain context
+- Ask follow-up questions to maintain medical context
 - Guide users to appropriate specialists when needed
-- Provide lifestyle advice based on symptoms"""
+- Provide lifestyle advice based on symptoms
 
-        # Initialize comprehensive health-related keyword sets
-        self.symptoms = {
-            'pain', 'ache', 'sore', 'discomfort', 'fever', 'cough', 'headache',
-            'nausea', 'vomiting', 'diarrhea', 'constipation', 'rash', 'swelling',
-            'dizziness', 'fatigue', 'tired', 'exhausted', 'weakness', 'numbness',
-            'tingling', 'stiffness', 'cramping', 'burning', 'itching', 'sneezing',
-            'congestion', 'runny nose', 'sore throat', 'chest pain', 'shortness of breath'
-        }
-        
-        self.body_parts = {
-            'head', 'neck', 'shoulder', 'arm', 'elbow', 'wrist', 'hand', 'finger',
-            'chest', 'back', 'spine', 'hip', 'leg', 'knee', 'ankle', 'foot', 'toe',
-            'stomach', 'abdomen', 'throat', 'eye', 'ear', 'nose', 'mouth', 'tongue',
-            'skin', 'muscle', 'bone', 'joint', 'heart', 'lung', 'liver', 'kidney'
-        }
-        
-        self.medical_terms = {
-            'health', 'medical', 'doctor', 'hospital', 'clinic', 'emergency',
-            'treatment', 'medicine', 'medication', 'prescription', 'therapy',
-            'surgery', 'procedure', 'diagnosis', 'prognosis', 'test', 'scan',
-            'x-ray', 'mri', 'ct scan', 'ultrasound', 'blood test', 'urine test'
-        }
-        
-        self.conditions = {
-            'diabetes', 'hypertension', 'asthma', 'arthritis', 'depression',
-            'anxiety', 'insomnia', 'allergy', 'infection', 'inflammation',
-            'flu', 'cold', 'covid', 'cancer', 'heart disease', 'stroke',
-            'migraine', 'ulcer', 'hernia', 'fracture', 'sprain', 'strain'
-        }
-        
-        self.wellness = {
-            'diet', 'nutrition', 'exercise', 'fitness', 'workout', 'yoga',
-            'meditation', 'sleep', 'rest', 'stress', 'mental health', 'wellness',
-            'lifestyle', 'healthy', 'vitamin', 'supplement', 'prevention',
-            'immunity', 'weight', 'bmi', 'blood pressure', 'cholesterol'
-        }
+Non-Medical Message Response:
+- If message is clearly not health-related, respond: "I'm a medical triage assistant. Please share your health concerns or medical questions so I can assist you properly."
+- Do NOT attempt to relate non-medical topics to previous medical discussions"""
 
-        # Add OTC medication categories
-        self.otc_medications = {
-            'pain_relievers': {
-                'acetaminophen', 'ibuprofen', 'aspirin', 'naproxen'
-            },
-            'cold_flu': {
-                'decongestants', 'antihistamines', 'cough_suppressants',
-                'expectorants', 'throat_lozenges'
-            },
-            'digestive': {
-                'antacids', 'laxatives', 'anti-diarrheals', 'anti-nausea'
-            },
-            'allergy': {
-                'antihistamines', 'nasal_sprays', 'eye_drops'
-            },
-            'topical': {
-                'antibiotic_ointments', 'antifungal_creams', 'hydrocortisone',
-                'pain_relieving_creams'
-            }
-        }
+        
 
-        # Add severity indicators
-        self.severity_indicators = {
-            'mild': {
-                'slight', 'minor', 'manageable', 'bearable', 'tolerable',
-                'intermittent', 'occasional'
-            },
-            'moderate': {
-                'persistent', 'regular', 'noticeable', 'uncomfortable',
-                'distracting', 'recurring'
-            },
-            'severe': {
-                'intense', 'severe', 'debilitating', 'unbearable', 'constant',
-                'worsening', 'acute', 'chronic'
-            }
-        }
-
-    def is_health_related(self, message: str) -> bool:
+    def is_health_related(self, message: str, conversation_history: list = None) -> bool:
         """
-        Enhanced check if the message is health-related using comprehensive keyword sets
-        and context analysis.
+        Intelligent health-related detection using OpenAI's natural language understanding.
+        This leverages the AI model's capability to understand context and medical relevance
+        without needing to maintain exhaustive keyword lists.
         """
-        message = message.lower()
-        words = set(message.split())
-        
-        # Direct keyword match in any category
-        all_keywords = (self.symptoms | self.body_parts | self.medical_terms |
-                       self.conditions | self.wellness)
-        
-        # Check for exact matches
-        if any(keyword in message for keyword in all_keywords):
-            return True
+        try:
+            from openai import OpenAI
+            import os
+            from dotenv import load_dotenv
             
-        # Check for word combinations that indicate health context
-        word_pairs = zip(message.split(), message.split()[1:])
-        health_pairs = [
-            ('feel', 'sick'), ('not', 'feeling'), ('having', 'trouble'),
-            ('medical', 'advice'), ('health', 'question'), ('should', 'see'),
-            ('been', 'diagnosed'), ('taking', 'medicine'), ('started', 'feeling')
-        ]
-        
-        if any(pair in health_pairs for pair in word_pairs):
-            return True
+            load_dotenv()
+            client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             
-        # Check for question patterns about health
-        health_question_starters = [
-            'why do i feel', 'what causes', 'is it normal',
-            'should i be concerned', 'how can i treat',
-            'what should i do about', 'when should i see'
-        ]
-        
-        if any(message.startswith(starter) for starter in health_question_starters):
-            return True
+            # Build context from conversation history if available
+            context_info = ""
+            if conversation_history and len(conversation_history) > 0:
+                recent_messages = [msg.get('content', '') for msg in conversation_history[-3:] 
+                                 if msg.get('role') == 'user']
+                if recent_messages:
+                    context_info = f"\nRecent conversation context: {' | '.join(recent_messages)}"
             
-        return False
+            # Create a strict prompt for health relevance detection
+            health_detection_prompt = f"""You are a medical triage assistant. Determine if the following message is DIRECTLY related to health, medical concerns, symptoms, injuries, or wellness.
+
+Message: "{message}"{context_info}
+
+STRICT RULES:
+- Only classify as HEALTH if the message itself contains health/medical content
+- Do NOT classify as HEALTH just because of previous medical conversation context
+- The message must be asking about health, describing symptoms, or requesting medical advice
+- General statements, greetings, or unrelated topics should be NOT_HEALTH
+
+Examples:
+✅ HEALTH:
+- "My cut is getting worse"
+- "I feel dizzy" 
+- "Should I see a doctor?"
+- "How do I treat this wound?"
+
+❌ NOT_HEALTH:
+- "I have a present to give" (even if discussing injury before)
+- "I'll warn you" (even in medical context)
+- "What's the weather?"
+- "How are you?"
+- "Thank you"
+
+Respond with ONLY: "HEALTH" or "NOT_HEALTH"
+
+Response:"""
+
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": health_detection_prompt}],
+                max_tokens=10,
+                temperature=0.0
+            )
+            
+            result = response.choices[0].message.content.strip().upper()
+            return "HEALTH" in result
+            
+        except Exception as e:
+            # Fallback to strict keyword detection if OpenAI fails
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"OpenAI health detection failed: {e}, using strict fallback")
+            
+            # Strict fallback - only clear medical terms
+            direct_health_indicators = [
+                'pain', 'hurt', 'ache', 'sick', 'ill', 'fever', 'cough', 'headache',
+                'cut', 'wound', 'injury', 'bleeding', 'bleed', 'bruise', 'burn',
+                'doctor', 'hospital', 'medicine', 'medication', 'treatment',
+                'symptom', 'symptoms', 'feel sick', 'feel ill', 'not feeling well',
+                'health problem', 'medical help', 'see a doctor', 'emergency'
+            ]
+            
+            # Only return True if message contains clear health indicators
+            message_lower = message.lower()
+            return any(indicator in message_lower for indicator in direct_health_indicators)
 
     def create_response_prompt(self, message: str) -> str:
         """Create appropriate prompt based on message content for medical triage."""
@@ -152,84 +130,6 @@ Remember:
         # General health concerns
         else:
             return f"Provide medical triage guidance for: {message}. Assess symptoms and suggest next steps."
-
-    def create_symptom_assessment_prompt(self, message: str) -> str:
-        """Create a prompt for symptom assessment with follow-up questions."""
-        severity = self.assess_severity(message)
-        follow_up_questions = self.generate_follow_up_questions(message)
-        
-        prompt = f"""Help me understand these symptoms while being cautious and empathetic: {message}
-
-Severity assessment: {severity}
-Follow-up questions to ask:
-{follow_up_questions}
-
-Based on the severity, if mild, suggest appropriate OTC medications.
-If moderate or severe, recommend consulting a healthcare professional."""
-
-        return prompt
-
-    def create_lifestyle_recommendation_prompt(self, message: str) -> str:
-        return f"Suggest healthy lifestyle changes addressing: {message}"
-
-    def create_specialist_referral_prompt(self, message: str) -> str:
-        return f"Guide about medical consultation regarding: {message}"
-
-    def create_medication_prompt(self, message: str) -> str:
-        """Create a prompt for medication-related queries."""
-        return f"""Assess the medication query: {message}
-
-Consider:
-1. Is this a request for OTC medication?
-2. What are the symptoms being treated?
-3. Are there any contraindications to consider?
-4. What is the appropriate dosage and duration?
-5. What are the potential side effects?
-
-Provide a response that:
-- Suggests appropriate OTC medications if applicable
-- Includes dosage and usage instructions
-- Mentions potential side effects
-- Recommends consulting a healthcare professional if needed"""
-
-    def assess_severity(self, message: str) -> str:
-        """Assess the severity of symptoms mentioned in the message."""
-        message = message.lower()
-        
-        # Check for severe indicators
-        if any(indicator in message for indicator in self.severity_indicators['severe']):
-            return "severe"
-        # Check for moderate indicators
-        elif any(indicator in message for indicator in self.severity_indicators['moderate']):
-            return "moderate"
-        # Default to mild if no severe/moderate indicators found
-        return "mild"
-
-    def generate_follow_up_questions(self, message: str) -> str:
-        """Generate relevant follow-up questions based on the symptoms mentioned."""
-        questions = []
-        message = message.lower()
-        
-        # General symptom questions
-        questions.append("How long have you been experiencing these symptoms?")
-        questions.append("Have you had these symptoms before?")
-        
-        # Pain-specific questions
-        if any(pain_word in message for pain_word in ['pain', 'ache', 'sore', 'discomfort']):
-            questions.append("On a scale of 1-10, how would you rate the pain?")
-            questions.append("Is the pain constant or does it come and go?")
-        
-        # Fever-related questions
-        if 'fever' in message:
-            questions.append("What is your current temperature?")
-            questions.append("Are you experiencing any other symptoms with the fever?")
-        
-        # Respiratory questions
-        if any(symptom in message for symptom in ['cough', 'congestion', 'runny nose', 'sore throat']):
-            questions.append("Are you experiencing any difficulty breathing?")
-            questions.append("Is there any mucus or phlegm?")
-        
-        return "\n".join(questions)
 
     def create_context_aware_prompt(self, message: str, conversation_history: List[Dict]) -> str:
         """FE-1: Create context-aware prompts for multi-turn conversations."""

@@ -9,6 +9,6 @@ class ApiConfig {
   // Override at run time with: --dart-define=BASE_URL=http://<ip>:8000
   static const String baseUrl = String.fromEnvironment(
     'BASE_URL',
-    defaultValue: 'http://192.168.18.60:8000',
+    defaultValue: 'http://192.168.0.146:8000',
   );
 }

@@ -33,14 +33,18 @@ origins = [
     "http://localhost:8000",     # Local development
     "http://localhost",          # Local development
     "http://127.0.0.1",         # Local development
-    "http://192.168.18.60",      # Current IP
-    "http://192.168.18.60:8000", # Current IP with port
+    "http://192.168.0.146",      # Current IP ✅ NEW (Wi-Fi)
+    "http://192.168.0.146:8000", # Current IP with port ✅ NEW (Wi-Fi)
+    "http://172.22.112.1",       # Previous IP (fallback)
+    "http://172.22.112.1:8000",  # Previous IP with port (fallback)
+    "http://192.168.18.60",      # Previous IP (fallback)
+    "http://192.168.18.60:8000", # Previous IP with port (fallback)
     "http://192.168.137.221",    # Previous IP (fallback)
-    "http://192.168.137.221:8000", # Previous IP with port (fallback)
+    "http://192.168.137.221:8000", # Previous IP with port (fallback)x 
     "http://10.115.103.69",      # Previous IP (fallback)
     "http://10.115.103.69:8000", # Previous IP with port (fallback)
-    "http://172.20.6.241",      # Previous IP (fallback)
-    "http://172.20.6.241:8000" # Previous IP with port (fallback)
+    "http://172.20.6.241",       # Previous IP (fallback)
+    "http://172.20.6.241:8000"   # Previous IP with port (fallback)
 ]
 
 app.add_middleware(

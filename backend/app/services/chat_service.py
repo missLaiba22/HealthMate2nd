@@ -31,13 +31,13 @@ async def get_ai_response(message: str, email: str) -> str:
     conversation_history = conversation_service.get_context(email)
     logger.info(f"Conversation history: {conversation_history}")
     
-    # Check if health-related
-    is_health = prompt_engine.is_health_related(message)
+    # Check if health-related using AI with conversation context
+    is_health = prompt_engine.is_health_related(message, conversation_history)
     logger.info(f"Message health-related check: {is_health} for message: {message}")
     
     if not is_health:
         logger.info(f"Message not health-related: {message}")
-        non_health_response = "I'm your medical triage assistant. How can I help with your health concerns today?"
+        non_health_response = "I'm a medical assistant focused on health concerns. Please let me know if you have any medical questions or symptoms you'd like to discuss."
         # Store conversation turn atomically (no redundancy)
         conversation_service.add_conversation_turn(email, message, non_health_response)
         return non_health_response

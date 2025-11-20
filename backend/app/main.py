@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import auth_routes, chat_routes, profile_routes, appointment_routes, scan_routes, speech_routes, doctor_availability_routes
+from app.routes import auth_routes, chat_routes, profile_routes, appointment_routes, scan_routes, speech_routes, doctor_availability_routes, avatar_proxy_routes
 import logging
 import time
 
@@ -27,29 +27,10 @@ async def log_requests(request: Request, call_next):
     
     return response
 
-# CORS configuration
-origins = [
-    "http://localhost:5173",     # Flutter web dev server
-    "http://localhost:8000",     # Local development
-    "http://localhost",          # Local development
-    "http://127.0.0.1",         # Local development
-    "http://192.168.0.146",      # Current IP ✅ NEW (Wi-Fi)
-    "http://192.168.0.146:8000", # Current IP with port ✅ NEW (Wi-Fi)
-    "http://172.22.112.1",       # Previous IP (fallback)
-    "http://172.22.112.1:8000",  # Previous IP with port (fallback)
-    "http://192.168.18.60",      # Previous IP (fallback)
-    "http://192.168.18.60:8000", # Previous IP with port (fallback)
-    "http://192.168.137.221",    # Previous IP (fallback)
-    "http://192.168.137.221:8000", # Previous IP with port (fallback)x 
-    "http://10.115.103.69",      # Previous IP (fallback)
-    "http://10.115.103.69:8000", # Previous IP with port (fallback)
-    "http://172.20.6.241",       # Previous IP (fallback)
-    "http://172.20.6.241:8000"   # Previous IP with port (fallback)
-]
-
+# Updated CORS configuration to allow all origins temporarily
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -63,6 +44,7 @@ app.include_router(appointment_routes.router, prefix="/appointments", tags=["App
 app.include_router(scan_routes.router, prefix="/scan", tags=["Scan Analysis"])
 app.include_router(doctor_availability_routes.router, prefix="/doctor-availability", tags=["Doctor Availability"])
 app.include_router(speech_routes.router, prefix="/speech", tags=["Speech"])
+app.include_router(avatar_proxy_routes.router, prefix="/avatar", tags=["Avatar"])
 
 @app.get("/")
 async def root():

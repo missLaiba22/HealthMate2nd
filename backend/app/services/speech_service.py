@@ -9,34 +9,62 @@ logger = logging.getLogger(__name__)
 
 class SpeechService:
     def __init__(self):
-        # Load the Whisper model (using small.en model for better English accuracy)
-        logger.info("Initializing Whisper model (English-optimized)...")
+        # Load the Whisper model (using medium for multilingual support)
+        logger.info("Initializing Whisper model (multilingual)...")
         try:
-            self.model = whisper.load_model("small.en")
-            logger.info("Whisper model loaded successfully")
+            # Use 'medium' model for better multilingual support (Urdu, Punjabi, English)
+            self.model = whisper.load_model("medium")
+            logger.info("Whisper medium model loaded successfully")
         except Exception as e:
-            logger.error(f"Failed to load Whisper model: {e}")
-            # Fallback to base model if small.en fails
-            logger.info("Attempting to load base model as fallback...")
-            self.model = whisper.load_model("base")
-            logger.info("Base Whisper model loaded successfully")
+            logger.error(f"Failed to load Whisper medium model: {e}")
+            # Fallback to small model
+            logger.info("Attempting to load small model as fallback...")
+            self.model = whisper.load_model("small")
+            logger.info("Whisper small model loaded successfully")
         
-        # Set optimized transcription options for medical conversations
-        self.transcribe_options = {
-            "language": "en",  # Force English language
-            "temperature": 0.0,  # Use greedy decoding for consistency
-            "no_speech_threshold": 0.2,  # More sensitive to speech detection
-            "logprob_threshold": -1.0,  # Allow lower confidence predictions
-            "compression_ratio_threshold": 2.4,
-            "condition_on_previous_text": False,  # Don't rely on previous context to avoid errors
-            "initial_prompt": "Medical symptoms, health questions, appointment scheduling: ",  # Medical context
+        # Language configurations
+        self.supported_languages = {
+            "en": {
+                "name": "English",
+                "whisper_code": "en",
+                "initial_prompt": "Medical symptoms, health questions, appointment scheduling: "
+            },
+            "ur": {
+                "name": "Urdu",
+                "whisper_code": "ur",
+                "initial_prompt": "طبی علامات، صحت کے سوالات، ملاقات کا وقت: "
+            }
+        }
+        
+        # Default language
+        self.current_language = "en"
+    
+    def set_language(self, language_code: str):
+        """Set the current language for transcription"""
+        if language_code in self.supported_languages:
+            self.current_language = language_code
+            logger.info(f"Language set to: {self.supported_languages[language_code]['name']}")
+        else:
+            logger.warning(f"Unsupported language code: {language_code}, keeping current language")
+    
+    def get_supported_languages(self):
+        """Get list of supported languages"""
+        return {
+            code: {"name": lang["name"]} 
+            for code, lang in self.supported_languages.items()
         }
     
-    async def transcribe_audio(self, audio_file_path: str) -> str:
+    async def transcribe_audio(self, audio_file_path: str, language: str = None) -> str:
         """
-        Transcribe audio file using optimized Whisper approach with API compatibility fix
+        Transcribe audio file with language support (English, Urdu)
         """
         try:
+            # Use provided language or current language
+            lang_code = language if language in self.supported_languages else self.current_language
+            lang_config = self.supported_languages[lang_code]
+            
+            logger.info(f"Transcribing audio in {lang_config['name']} ({lang_code})")
+            
             # Convert to Path object for better path handling
             audio_path = Path(audio_file_path)
             logger.info(f"Starting transcription of file: {audio_path}")
@@ -59,8 +87,8 @@ class SpeechService:
             processed_audio_path = await self._preprocess_audio(audio_path)
             
             # Use compatibility-safe transcription approach
-            logger.info("Starting Whisper transcription with compatibility mode...")
-            result = await self._safe_transcribe(processed_audio_path)
+            logger.info(f"Starting Whisper transcription in {lang_config['name']}...")
+            result = await self._safe_transcribe(processed_audio_path, lang_code)
             
             # Clean up temporary processed file if different from original
             if processed_audio_path != audio_path:
@@ -96,22 +124,27 @@ class SpeechService:
             # Return a helpful error message instead of random mock text
             return "I'm having trouble hearing you clearly. Please try speaking again."
     
-    async def _safe_transcribe(self, audio_path: Path) -> dict:
+    async def _safe_transcribe(self, audio_path: Path, language: str = "en") -> dict:
         """
-        Safe transcription method that handles API compatibility issues
+        Safe transcription method with multilingual support
         """
         try:
-            # Try the direct approach first (works with most versions)
-            logger.info("Attempting direct transcription...")
+            lang_config = self.supported_languages.get(language, self.supported_languages["en"])
             
-            # Use minimal options to avoid compatibility issues
-            basic_options = {
-                "language": "en",
+            # Try the direct approach first (works with most versions)
+            logger.info(f"Attempting transcription in {lang_config['name']}...")
+            
+            # Use language-specific options
+            transcribe_options = {
+                "language": lang_config["whisper_code"],
                 "temperature": 0.0,
+                "initial_prompt": lang_config["initial_prompt"],
+                "no_speech_threshold": 0.2,
             }
             
-            result = self.model.transcribe(str(audio_path), **basic_options)
-            logger.info("Direct transcription successful")
+            result = self.model.transcribe(str(audio_path), **transcribe_options)
+            logger.info(f"Transcription successful in {lang_config['name']}")
+            logger.info(f"Detected language: {result.get('language', 'unknown')}")
             return result
             
         except TypeError as e:

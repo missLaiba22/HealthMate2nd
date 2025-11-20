@@ -94,43 +94,9 @@ migrate_working_dir/
 *.raw
 
 # ====================
-# Build Artifacts
-# ====================
-# Flutter build outputs
-build/
-**/build/
-**/android/app/build/
-**/ios/build/
-**/web/build/
-**/windows/build/
-**/linux/build/
-**/macos/build/
-
-# Android specific
-**/android/app/debug/
-**/android/app/profile/
-**/android/app/release/
-**/android/.gradle/
-**/android/captures/
-**/android/gradlew
-**/android/gradlew.bat
-**/android/local.properties
-**/android/key.properties
-**/android/app/upload-keystore.jks
-
-# iOS specific
-**/ios/Pods/
-**/ios/.symlinks/
-**/ios/Flutter/Flutter.framework
-**/ios/Flutter/Flutter.podspec
-**/ios/Flutter/Generated.xcconfig
-**/ios/Flutter/ephemeral/
-**/ios/Flutter/app.flx
-**/ios/Flutter/app.zip
-**/ios/Flutter/flutter_assets/
-**/ios/Flutter/flutter_export_environment.sh
-**/ios/ServiceDefinitions.json
-**/ios/Runner/GeneratedPluginRegistrant.*
+# Build Artifacts (frontend removed)
+# Generic build artifacts are ignored; any frontend-specific build ignores
+# for the previous Flutter frontend have been removed.
 
 # ====================
 # Dependencies & Packages

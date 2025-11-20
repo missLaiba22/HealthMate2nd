@@ -11,7 +11,6 @@ class ChatRequest(BaseModel):
     message: str
 
 @router.post("")
-@router.post("/")
 async def chat(request: ChatRequest, current_user=Depends(get_current_user)):
     """Chat with AI assistant"""
     try:

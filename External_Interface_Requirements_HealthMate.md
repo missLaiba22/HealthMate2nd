@@ -6,7 +6,7 @@ This section provides information to ensure that the HealthMate system will comm
 
 ### 3.7.1.1 GUI Standards and Design Guidelines
 
-**UI-1:** The HealthMate application shall follow Material Design principles for Flutter applications.
+**UI-1:** The HealthMate application shall follow Material Design principles.
 
 **UI-2:** The application shall maintain consistent branding with the following implemented design standards:
 - Primary Color: #2196F3 (Blue)
@@ -38,7 +38,7 @@ This section provides information to ensure that the HealthMate system will comm
 ### 3.7.1.3 Accessibility Requirements
 
 **UI-6:** The system accommodates visually impaired users through:
-- Voice-to-text and text-to-speech capabilities (Flutter TTS)
+- Voice-to-text and text-to-speech capabilities (platform-appropriate TTS)
 - Voice navigation support
 
 **UI-7:** The application supports multiple input methods:
@@ -87,7 +87,7 @@ This section provides information to ensure that the HealthMate system will comm
 **SI-4: Speech Processing Services**
 **SI-4.1:** The system uses OpenAI Whisper for speech-to-text conversion with support for multiple languages and accents.
 
-**SI-4.2:** Text-to-speech functionality is provided through Flutter TTS with configurable voice settings and speech rates.
+**SI-4.2:** Text-to-speech functionality is provided through a platform-appropriate TTS solution with configurable voice settings and speech rates.
 
 ### 3.7.2.3 Database Interfaces
 

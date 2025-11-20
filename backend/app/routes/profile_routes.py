@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Profile"])
 
 @router.get("")
-@router.get("/")
 async def get_profile(current_user=Depends(get_current_user)):
     """Get user profile"""
     try:
@@ -26,7 +25,6 @@ async def get_profile(current_user=Depends(get_current_user)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.put("")
-@router.put("/")
 async def update_profile(profile: dict, current_user=Depends(get_current_user)):
     """Update user profile"""
     try:

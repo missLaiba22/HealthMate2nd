@@ -36,6 +36,9 @@ class PatientProfile(BaseModel):
     age: Optional[int] = None
     medical_history: List[str] = []
     allergies: List[str] = []
+    avatar_id: Optional[str] = None  # Ready Player Me avatar ID
+    rpm_user_id: Optional[str] = None  # Ready Player Me user ID
+    rpm_token: Optional[str] = None  # Ready Player Me user token for customization
 
 class UserModel:
     """Database operations for User model"""
